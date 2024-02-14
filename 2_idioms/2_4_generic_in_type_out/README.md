@@ -82,6 +82,8 @@ While for an input parameter we want to accept as much types as possible, for re
 
 Consider [`Iterator`] adapter methods as an example: [`Iterator::map()`][7], [`Iterator::enumerate()`][8], [`Iterator::filter()`][9], etc. They all return a concrete adapter type, rather than `impl Iterator<..>` abstraction.
 
+- back then when they were implemented there was no impl trait (and no generators in so far, so those adapters being public was the only real option)
+
 However, this is not a strict rule, so should not be applied blindly. If you _really need_ to abstract over a return type (for example, to future-proof your API), then just do it.
 
 
