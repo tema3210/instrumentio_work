@@ -28,43 +28,50 @@ impl InCoins {
         let mut curr_sum = 0;
         let mut curr_coins = [0;6];
 
-        for (i,(nominal, ammount)) in COINS.iter().zip(self.0.iter()).enumerate() {
+        'coins: for (i,(nominal, ammount)) in COINS.iter().zip(self.0.iter()).enumerate() {
             let target = (sum - curr_sum); // what we want on this iteration
 
             for attempt in 0..*ammount {
                 let next = *ammount.min(&(attempt + 1)); //the next possible ammount of coins
 
                 match (attempt * nominal < target, next * nominal < target) {
+                    // current try and the next try are less the needed
                     (true, true) if next > attempt => continue,
+                    // we've reached a peak ammount of coins of current nominal, so take them
                     (true, true) if next == attempt => {
                         curr_coins[i] = attempt;
                         curr_sum += attempt * nominal;
                         break;
                     },
+                    // well, attempt is greater than next attempt...
                     (true,true) => unreachable!("next < attempt !!!!"),
+                    // we found right ammount of coins of given nominal
+                    // cut the most of the price
                     (true,false) => {
                         curr_coins[i] = attempt;
                         curr_sum += attempt * nominal;
                         break;
                     },
-                    (false, true) => unreachable!("impossible"),
+                    // go on
+                    (false, true) => continue,
+                    // price is too big
                     (false,false) => {
-                       break;
+                       break 'coins;
                     }
                 }
             }
-
-
-            if nominal * ammount > target {
-                continue
-            } else {
-                
-            };
         }
+        assert!(curr_sum <= sum, "sanity");
 
-        unimplemented!()
+        if curr_sum < sum {
+            return None;
+        };
+
+        Some(InCoins(curr_coins))
     }
 
+
+    /// the fisrt is modified self the second is change
     fn trade(&self, other: &Self, price: u32) -> Option<[InCoins;2]> {
         if other.total() < price { return None };
         
@@ -78,9 +85,17 @@ impl InCoins {
             ret
         });
 
+        let change_coins = coins_got.coins_for_sum(change)?;
 
+        let coins_rest = InCoins({ //coins we have got in vending machine
+            let mut ret = [0;6];
+            for i in 0..6 {
+                ret[i] = coins_got.0[i] - change_coins.0[i];
+            };
+            ret
+        });
 
-
+        Some([coins_rest,change_coins])
 
     }
 
@@ -89,32 +104,25 @@ impl InCoins {
     }
 }
 
-struct Money {
-    sum: u32,
-    in_coins: InCoins, //symetrical to order of the coins above
-}
-
 struct VendingMachine {
     stored: HashMap<Product,u8>,
     has: InCoins
-
 }
 
 impl VendingMachine {
-    fn purchase(&mut self,what: Product, money: InCoins) -> Option<(Product,InCoins)> {
+    fn purchase(&mut self,what: Product, money: InCoins) -> Option<([Product;1],InCoins)> {
         if self.stored[&what] > 1 {
-
+            if money.total() < what.price {
+                return None
+            };
+            let [inner,change] = self.has.trade(&money, what.price)?;
+            self.has = inner;
+            Some(([what],change))
         } else {
             None
         }
     }
 }
-
-
-
-
-
-
 
 fn main() {
     println!("Implement me!");
