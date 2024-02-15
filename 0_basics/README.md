@@ -10,24 +10,23 @@ Polish your familiarity by completing [Rust By Example] and [rustlings].
 Read through [Cargo Book] and become familiar with [Cargo] and its workspaces.
 
 After completing these steps, you should be able to answer (and understand why) the following questions:
-- What memory model [Rust] has? Is it single-threaded or multiple-threaded? Is it synchronous or asynchronous? - Affine types using exclusive mutability and lifetimes, multi-threaded
-- What runtime [Rust] has? Does it use a GC (garbage collector)? - barebones runtime, a little more over C's , includes threads and co
-- What statically typing means? What is a benefit of using it? -  a variable (thus also values) has one permanent type
-- What are generics and parametric polymorphism? Which problems do they solve? - code sharing, deduplication, abstractions to an extent
-- What are traits? How are they used? How do they compare to interfaces? What are an auto trait and a blanket impl? What is a marker trait? - ifaces on steroids, they feature not only methods but also types and consts
-- What are static and dynamic dispatches? Which should I use, and when? - dynamic is for FFI and hand tuning of code towards binary size , static for the rest
-- What is a crate and what is a module in Rust? How do they differ? How are the used? - crate is library and compilation unit, module is code organisation unit
-- What are move semantics? What are borrowing rules? What is the benefit of using them? - RAII, thread safety, theoretically better optimizations but in practice on par
-- What is immutability? What is the benefit of using it? - you don't worry about unexpected changes in any of values
-- What is cloning? What is copying? How do they compare? - clone() is a presumably expencive operation, copy is bytewise copy suitable for plain data objects;
-- What is RAII? How is it implemented in [Rust]? What is the benefit of using it? - In rust we have `Deref`'s for creation of wrappers to resources and `Drop` for cleaing things up;
-- What is an iterator? What is a collection? How do they differ? How are they used? - iterator present your code with data, collection stores it; both are used in data processing;
+- What memory model [Rust] has? Is it single-threaded or multiple-threaded? Is it synchronous or asynchronous?
+- What runtime [Rust] has? Does it use a GC (garbage collector)?
+- What statically typing means? What is a benefit of using it?
+- What are generics and parametric polymorphism? Which problems do they solve?
+- What are traits? How are they used? How do they compare to interfaces? What are an auto trait and a blanket impl? What is a marker trait?
+- What are static and dynamic dispatches? Which should I use, and when?
+- What is a crate and what is a module in Rust? How do they differ? How are the used?
+- What are move semantics? What are borrowing rules? What is the benefit of using them?
+- What is immutability? What is the benefit of using it?
+- What is cloning? What is copying? How do they compare?
+- What is RAII? How is it implemented in [Rust]? What is the benefit of using it?
+- What is an iterator? What is a collection? How do they differ? How are they used?
 - What are macros? Which problems do they solve? What is the difference between declarative and procedural macro?
-boilerplate they solve, sometimes, they do DSL to ease certain applications, declarative macro doesn't run custom compiler plugin
-- How code is tested in [Rust]? Where should you put tests and why? - using unit tests and integration tests, in separate files inside of either a `mod tests;` or a file in `/test` project subdir
-- Why [Rust] has `&str` and `String` types? How do they differ? When should you use them? - one is string slice <=> C's span, the other one is managed heap allocated String
-- What are lifetimes? Which problems do they solve? Which benefits do they give? - memory managment facility; safety and sanity without GC
-- Is [Rust] OOP language? Is it possible to use SOLID/GRASP? Does it have an inheritance? - tricky question, in Rust we have objects, we have methods, but no inheritance and run-time polymorphism by default, given we gonna get trait object upcasting soonish - we're ALMOST OOP yet few deem us that. (I never understood OOP)
+- How code is tested in [Rust]? Where should you put tests and why?
+- Why [Rust] has `&str` and `String` types? How do they differ? When should you use them?
+- What are lifetimes? Which problems do they solve? Which benefits do they give?
+- Is [Rust] OOP language? Is it possible to use SOLID/GRASP? Does it have an inheritance?
 
 _Additional_ articles, which may help to understand the above topic better:
 - [Chris Morgan: Rust ownership, the hard way][1]
