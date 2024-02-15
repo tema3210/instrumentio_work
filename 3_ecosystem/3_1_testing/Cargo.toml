@@ -3,3 +3,12 @@ name = "step_3_1"
 version = "0.1.0"
 edition = "2021"
 publish = false
+
+[dev-dependencies]
+cucumber = { version = "0.20", features = ["timestamps","tracing"]}
+futures = "0.3"
+tracing="*"
+
+[[test]]
+name = "cucumber" # this should be the same as the filename of your test target
+harness = false  # allows Cucumber to print output instead of libtest
