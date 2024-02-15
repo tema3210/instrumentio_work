@@ -8,7 +8,10 @@ pub use self::{my_error::MyError, my_iterator_ext::MyIteratorExt};
 
 // }
 
-// cannot call a sealed method
+/// The doc test
+/// ```compile_fail
+/// MyError::type_id("a static ref", ??)
+/// ```
 fn run_me() {
-    //MyError::type_id("a static ref", ??)
+
 }
