@@ -10,9 +10,28 @@ pub struct GameWorld {
     game: Child,
 }
 
+type Error = std::borrow::Cow<'static, str>;
+
 impl GameWorld {
-    fn read_stdin(&mut self) -> Option<String> {
-        
+    fn read_stdout(&mut self) -> Result<String, Error> {
+        if let Some(pipe_in) = &mut self.game.stdout {
+            let mut buf = Vec::new();
+            event!(Level::INFO,"Read to a child thread");
+            std::io::Read::read_to_end(pipe_in, &mut buf).map_err(|_| "failed to read to end into buf")?;
+
+            String::from_utf8(buf).map_err(|_| "cannot read buf to string".into())
+        } else {
+            Err("cannot open childs pipe".into())
+        }
+    }
+
+    fn write_stdin<S: AsRef<str>>(&mut self, s: S) -> Result<(), Error> {
+        if let Some(pipe_in) = &mut self.game.stdin {
+            event!(Level::INFO,"Write to a child thread");
+            pipe_in.write_str(format!("{}\n",s.as_ref())).map_err(|_| "cannot write to child".into())
+        } else {
+            Err("cannot open childs pipe".into())
+        }
     }
 }
 
@@ -60,31 +79,14 @@ fn consistent(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>
 
 #[when("we guess a number right")]
 fn winnable(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
-
-    if let Some(pipe_in) = &mut world.game.stdin {
-        event!(Level::INFO,"Write to a child thread");
-        pipe_in.write_str(format!("{}\n",world.the_number)).map_err(|_| "cannot write to child".into())
-    } else {
-        Err("cannot open childs pipe".into())
-    }
+    world.write_stdin(world.the_number.to_string())
 }
 
 #[then("we win")]
 fn we_win(world: &mut GameWorld) -> Result<(),String> {
-    if let Some(pipe_in) = &mut world.game.stdout {
-        let mut buf = Vec::new();
-        event!(Level::INFO,"Read to a child thread");
-        std::io::Read::read_to_end(pipe_in, &mut buf).map_err(|_| "failed to read to end into buf")?;
-        let s = String::from_utf8(buf).map_err(|_| "cannot read buf to string")?;
+    let ret = world.read_stdout()?;
 
-        if s.contains("You win!")  {
-            Ok(())
-        } else {
-            Err(format!("game is not winnable: {}",s).into())
-        }
-    } else {
-        Err("cannot open childs pipe".into())
-    }
+    if ret.contains("You win!") { Ok(()) } else { Err("Game is unwinnable!".into()) }
 }
 
 #[when("we pass not a number input")]

@@ -2,7 +2,7 @@ Feature: Same number doesn't recieve random input
 
   Scenario: If we pass in same number
     Given a program is running
-    When we pass same number
+    When we pass in "3" "2" times
     Then program produces same output
   
   Scenario: Try to win a game 
