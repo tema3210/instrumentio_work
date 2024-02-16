@@ -72,6 +72,11 @@ fn hb(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
     }
 }
 
+#[when(expr = "we pass string: {}")]
+fn pass(world: &mut GameWorld,what: String) -> Result<(),std::borrow::Cow<'static, str>> {
+    world.write_stdin(what)
+}
+
 #[when("we pass same number")]
 fn consistent(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
     Err("unimplemented!".into())
@@ -91,27 +96,13 @@ fn we_win(world: &mut GameWorld) -> Result<(),String> {
 
 #[when("we pass not a number input")]
 fn sane(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
-    if let Some(pipe_in) = &mut world.game.stdin {
-        event!(Level::INFO,"Write to a child thread");
-        pipe_in.write_str(format!("{}\n","My stomach ruubmbluuuuuues!")).map_err(|_| "cannot write to child".into())
-    } else {
-        Err("cannot open childs pipe".into())
-    }
+    world.write_stdin("My stomach ruubmbluuuuuues!")
 }
 
 #[then("program ignores a line")]
 fn ignores(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
-    if let Some(pipe_out) = &mut world.game.stdout {
-        let mut buf = Vec::new();
-        event!(Level::INFO,"Read to a child thread");
-        std::io::Read::read_to_end(pipe_out, &mut buf).map_err(|_| "failed to read to end into buf")?;
-        let s = String::from_utf8(buf).map_err(|_| "cannot read buf to string")?;
-
-        Err(format!("debug: {s}").into())
-        
-    } else {
-        Err("cannot open childs pipe".into())
-    }
+    let s = world.read_stdout()?;
+    Err(format!("debug: {s}").into())
 }
 
 // This runs before everything else, so you can setup things here.
