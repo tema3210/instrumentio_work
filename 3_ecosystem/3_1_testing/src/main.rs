@@ -5,6 +5,14 @@ fn main() {
 
     let secret_number = get_secret_number();
 
+
+    // #Please input your guess.
+    // #...
+    // #You guessed: {}
+    // -# You win!
+    // -# Too small!
+    // -# Too big!
+
     loop {
         println!("Please input your guess.");
 
