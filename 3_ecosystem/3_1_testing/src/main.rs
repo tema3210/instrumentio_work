@@ -5,14 +5,6 @@ fn main() {
 
     let secret_number = get_secret_number();
 
-
-    // #Please input your guess.
-    // #...
-    // #You guessed: {}
-    // -# You win!
-    // -# Too small!
-    // -# Too big!
-
     loop {
         println!("Please input your guess.");
 
@@ -54,14 +46,3 @@ fn get_guess_number() -> Option<u32> {
         .expect("Failed to read line");
     guess.trim().parse().ok()
 }
-
-
-
-// We test an invalid input.
-// We test consistency on same number
-// We somehow test ability to win?
-// - should i write the guesser program?
-// ####
-// fuzzer may not win a game
-// mock what?
-// e2e tests may go
