@@ -71,6 +71,8 @@ For better understanding the topic, read through:
 - Create a `Polyline` type which represents a non-empty set of `Point`s of unknown size. This type has to be `Clone` and non-`Default`.
 
 
+
+
 ## Questions
 
 After completing everything above, you should be able to answer (and understand why) the following questions:

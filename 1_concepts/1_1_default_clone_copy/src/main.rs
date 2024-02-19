@@ -17,9 +17,9 @@ struct Polyline(Vec<Point>);
 
 impl Polyline {
     fn new(p1: Point, p2: Point, rest: &[Point]) -> Self {
-        let mut v = vec![p1,p2];
+        let mut v = vec![p1, p2];
         v.extend_from_slice(&rest);
-        Self (v)
+        Self(v)
     }
 }
 
