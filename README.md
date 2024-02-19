@@ -70,6 +70,9 @@ Each step must be performed as a separate [PR (pull request)][PR] with an approp
 
 - [x] [0. Become familiar with Rust basics][Step 0] (3 days)
 - [ ] [1. Concepts][Step 1] (2 days, after all sub-steps)
+
+    - [x] [1.1. Default values, cloning and copying][Step 1.1] (1 day)
+    - [x] [1.2. Boxing and pinning][Step 1.2] (1 day)
     - [x] [1.1. Default values, cloning and copying][Step 1.1] (1 day)
     - [ ] [1.2. Boxing and pinning][Step 1.2] (1 day)
     - [ ] [1.3. Shared ownership and interior mutability][Step 1.3] (1 day)
