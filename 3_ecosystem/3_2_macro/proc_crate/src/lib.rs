@@ -21,9 +21,6 @@ macro_rules! nxt {
 /// works only with literals since i'm lazy
 #[proc_macro]
 pub fn btreemap(toks: TokenStream) -> TokenStream {
-
-
-    dbg!(&toks);
     // literal, punct(=), punct(>), literal
     //           s: joint  s: alone
     // punct(,) *
