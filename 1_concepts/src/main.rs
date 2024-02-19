@@ -1,5 +1,7 @@
 use std::{
-    fmt::Display, mem, ptr, sync::{Arc, Mutex}
+    fmt::Display,
+    mem, ptr,
+    sync::{Arc, Mutex},
 };
 
 // Node represents a node in the doubly linked list
