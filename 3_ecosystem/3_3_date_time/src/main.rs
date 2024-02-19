@@ -49,14 +49,17 @@ mod age_spec {
 
     #[test]
     fn zero_if_birthdate_in_future() {
-        for (i,((y, m, d), expected)) in vec![
+        for (i, ((y, m, d), expected)) in vec![
             ((2032, 6, 25), 0),
             ((2026, 6, 27), 0), // -_-
             ((3000, 6, 27), 0),
             ((9999, 6, 27), 0),
-        ].into_iter().enumerate() {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let user = User::with_birthdate(y, m, d);
-            assert_eq!(user.age(), expected,"at {}", i );
+            assert_eq!(user.age(), expected, "at {}", i);
         }
     }
 }
