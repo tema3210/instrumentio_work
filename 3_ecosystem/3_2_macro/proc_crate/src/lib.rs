@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream,TokenTree,Punct,Ident,Group,Literal,Spacing};
+use proc_macro::{Group, Ident, Literal, Punct, Spacing, TokenStream, TokenTree};
 
 macro_rules! nxt {
     ($t:ident,$l:lifetime) => {
@@ -16,8 +16,6 @@ macro_rules! nxt {
     }
 }
 
-
-
 /// works only with literals since i'm lazy
 #[proc_macro]
 pub fn btreemap(toks: TokenStream) -> TokenStream {
@@ -28,52 +26,56 @@ pub fn btreemap(toks: TokenStream) -> TokenStream {
     let mut pairs = Vec::new();
 
     let mut iter = toks.into_iter().peekable();
-    'm: loop { 
+    'm: loop {
         // generates let or throws
         nxt!(TokenTree::Literal(key),iter,'m);
 
         nxt!(TokenTree::Punct(p),iter,'m);
-        if p != '=' { break 'm Err("bad input 1")}
+        if p != '=' {
+            break 'm Err("bad input 1");
+        }
 
         nxt!(TokenTree::Punct(p),iter,'m);
-        if p != '>' { break 'm Err("bad input 2")}
+        if p != '>' {
+            break 'm Err("bad input 2");
+        }
 
         nxt!(TokenTree::Literal(val),iter,'m);
 
-        pairs.push((key,val));
+        pairs.push((key, val));
         // match the comma
 
         match iter.peek() {
             Some(TokenTree::Punct(comma)) if *comma == ',' => {
                 let _ = iter.next();
-                continue
-            },
+                continue;
+            }
             None => break 'm Ok(()),
-            Some(_) => break 'm Err("bad input 3")
+            Some(_) => break 'm Err("bad input 3"),
         }
-    }.unwrap();
-
+    }
+    .unwrap();
 
     // assemble the data insertion code
-    let data = pairs.into_iter().fold(String::new(),|mut data, (key,value)| {
-        data.push_str(
-            &format!("btreemap.insert({},{});\n",key,value)
-        );
-        data
-    });
+    let data = pairs
+        .into_iter()
+        .fold(String::new(), |mut data, (key, value)| {
+            data.push_str(&format!("btreemap.insert({},{});\n", key, value));
+            data
+        });
 
     // assemble the result
-    let result = format!("{}{}{}",
+    let result = format!(
+        "{}{}{}",
         "
         {
             let mut btreemap = std::collections::BTreeMap::new();
         ",
-            data,
+        data,
         "
             btreemap
         }
         "
-
     );
 
     result.parse().unwrap()
