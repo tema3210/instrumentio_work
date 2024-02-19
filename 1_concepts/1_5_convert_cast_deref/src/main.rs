@@ -42,7 +42,8 @@ impl<T> Deref for Random<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        todo!()
+        let idx = rand::random::<usize>() % 3;
+        &self.0[idx]
     }
 }
 
