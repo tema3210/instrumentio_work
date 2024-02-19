@@ -50,19 +50,21 @@ impl<T> DoublyLinkedList<T> {
 
     // Removes and returns the element from the front of the list
     pub fn pop_front(&mut self) -> Option<T> {
-        self.head.take().map(|head| {
-            let mut head = head.lock().unwrap();
+        self.head.take().map(|head_arc| {
+            let mut head = head_arc.lock().unwrap();
             if let Some(ref mut new_head) = head.next {
                 new_head.lock().unwrap().prev = None;
                 self.head = Some(new_head.clone());
             } else {
                 self.tail = None;
             }
-            // since we cannot move out of deref...
-            unsafe {
-                mem::forget(head.data);
-                ptr::read(&head.data)
-            }
+            drop(head);
+            //we do this since we are the only owner left
+            let inner = Arc::into_inner(head_arc).unwrap();
+
+            let inner = inner.into_inner().unwrap();
+
+            inner.data
         })
     }
 
