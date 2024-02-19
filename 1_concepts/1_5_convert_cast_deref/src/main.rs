@@ -7,7 +7,10 @@ impl<'s> TryFrom<&'s str> for EmailString {
 
     fn try_from(value: &'s str) -> Result<Self, Self::Error> {
         // and here we'd like a lazy_static cell also
-        let regex = regex::Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
+        let regex = regex::Regex::new(
+            r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})",
+        )
+        .unwrap();
         if regex.is_match(value) {
             Ok(Self(String::from(value)))
         } else {
@@ -36,7 +39,7 @@ impl AsRef<String> for EmailString {
     }
 }
 
-struct Random<T>([T;3]);
+struct Random<T>([T; 3]);
 
 impl<T> Deref for Random<T> {
     type Target = T;
