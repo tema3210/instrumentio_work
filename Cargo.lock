@@ -3,6 +3,10 @@
 version = 3
 
 [[package]]
+name = "proc_crate"
+version = "0.1.0"
+
+[[package]]
 name = "step_1"
 version = "0.1.0"
 
@@ -89,6 +93,9 @@ version = "0.1.0"
 [[package]]
 name = "step_3_2"
 version = "0.1.0"
+dependencies = [
+ "proc_crate",
+]
 
 [[package]]
 name = "step_3_3"
