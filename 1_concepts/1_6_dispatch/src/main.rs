@@ -13,18 +13,23 @@ struct User {
 }
 
 /// this one can be used statically only, if rust team doesn't support Swift style generics (they expose generic API with sized generics at cost of implicit allocations)
-struct UserRepositoryStatic<S: Storage<u64,User>> {
-    store: S
+struct UserRepositoryStatic<S: Storage<u64, User>> {
+    store: S,
 }
 
-impl<S> From<S> for UserRepositoryStatic<S> where S: Storage<u64,User> {
+impl<S> From<S> for UserRepositoryStatic<S>
+where
+    S: Storage<u64, User>,
+{
     fn from(value: S) -> Self {
         Self { store: value }
-    } 
+    }
 }
 
-
-impl<S> UserRepositoryStatic<S> where S: Storage<u64,User> {
+impl<S> UserRepositoryStatic<S>
+where
+    S: Storage<u64, User>,
+{
     fn set(&mut self, key: u64, val: User) {
         self.store.set(key, val)
     }
@@ -38,11 +43,11 @@ impl<S> UserRepositoryStatic<S> where S: Storage<u64,User> {
 
 /// so far to use this over FFI we lack "only" a stable ABI
 struct UserRepositoryDynamic {
-    store: Box<dyn Storage<u64,User>>
+    store: Box<dyn Storage<u64, User>>,
 }
 
 impl UserRepositoryDynamic {
-    fn from_boxed_store(b: Box<dyn Storage<u64,User>>) -> Self {
+    fn from_boxed_store(b: Box<dyn Storage<u64, User>>) -> Self {
         Self { store: b }
     }
 
