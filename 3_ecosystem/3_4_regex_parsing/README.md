@@ -90,7 +90,7 @@ Given the following [Rust `fmt` syntax grammar][7]:
 > precision := count | '*'
 > type := '' | '?' | 'x?' | 'X?' | identifier
 > count := parameter | integer
-> parameter := argument '$'
+> parameter := '$' argument 
 > ```
 > In the above grammar,
 > - `text` must not contain any `'{'` or `'}'` characters,
