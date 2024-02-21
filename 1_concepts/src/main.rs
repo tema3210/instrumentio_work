@@ -1,5 +1,8 @@
 use std::{
-    borrow::Borrow, fmt::{self, Display}, mem, ptr, sync::{Arc, Mutex}
+    borrow::Borrow,
+    fmt::{self, Display},
+    mem, ptr,
+    sync::{Arc, Mutex},
 };
 
 /// Node represents a node in the doubly linked list
@@ -77,7 +80,7 @@ impl<T: fmt::Display> fmt::Display for DoublyLinkedList<T> {
 
         while let Some(node) = current {
             let node = node.lock().unwrap();
-            write!(f, "{}",node.data)?;
+            write!(f, "{}", node.data)?;
 
             current = node.borrow().next.as_ref().map(|next| Arc::clone(next));
             if current.is_some() {
@@ -99,5 +102,5 @@ fn main() {
     let popped = list.pop_front();
     println!("Popped: {:?}", popped);
 
-    println!("{}",&list);
+    println!("{}", &list);
 }
