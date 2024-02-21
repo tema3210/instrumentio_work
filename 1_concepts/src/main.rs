@@ -1,10 +1,8 @@
 use std::{
-    fmt::Display,
-    mem, ptr,
-    sync::{Arc, Mutex},
+    borrow::Borrow, fmt::{self, Display}, mem, ptr, sync::{Arc, Mutex}
 };
 
-// Node represents a node in the doubly linked list
+/// Node represents a node in the doubly linked list
 struct Node<T> {
     data: T,
     next: Option<Arc<Mutex<Node<T>>>>,
@@ -21,14 +19,14 @@ impl<T> Node<T> {
     }
 }
 
-// DoublyLinkedList represents the thread-safe doubly linked list
+/// DoublyLinkedList represents the thread-safe doubly linked list
 pub struct DoublyLinkedList<T> {
     head: Option<Arc<Mutex<Node<T>>>>,
     tail: Option<Arc<Mutex<Node<T>>>>,
 }
 
 impl<T> DoublyLinkedList<T> {
-    // Creates an empty doubly linked list
+    /// Creates an empty doubly linked list
     pub fn new() -> Self {
         DoublyLinkedList {
             head: None,
@@ -36,7 +34,7 @@ impl<T> DoublyLinkedList<T> {
         }
     }
 
-    // Adds a new element to the end of the list
+    /// Adds a new element to the end of the list
     pub fn push_back(&mut self, data: T) {
         let new_node = Node::new(data);
         if let Some(ref mut tail) = self.tail {
@@ -50,7 +48,7 @@ impl<T> DoublyLinkedList<T> {
         self.tail = Some(new_node);
     }
 
-    // Removes and returns the element from the front of the list
+    /// Removes and returns the element from the front of the list
     pub fn pop_front(&mut self) -> Option<T> {
         self.head.take().map(|head_arc| {
             let mut head = head_arc.lock().unwrap();
@@ -69,19 +67,25 @@ impl<T> DoublyLinkedList<T> {
             inner.data
         })
     }
+}
 
-    // Prints the elements of the list
-    pub fn print(&self)
-    where
-        T: Display,
-    {
-        let mut current = self.head.clone();
+impl<T: fmt::Display> fmt::Display for DoublyLinkedList<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "DoublyLinkedList: [")?;
+
+        let mut current = self.head.as_ref().map(|node| Arc::clone(node));
+
         while let Some(node) = current {
             let node = node.lock().unwrap();
-            print!("{} ", node.data);
-            current = node.next.clone();
+            write!(f, "{}",node.data)?;
+
+            current = node.borrow().next.as_ref().map(|next| Arc::clone(next));
+            if current.is_some() {
+                write!(f, " <-> ")?;
+            }
         }
-        println!();
+
+        write!(f, "]")
     }
 }
 
@@ -92,10 +96,8 @@ fn main() {
     list.push_back(2);
     list.push_back(3);
 
-    list.print();
-
     let popped = list.pop_front();
     println!("Popped: {:?}", popped);
 
-    list.print();
+    println!("{}",&list);
 }
