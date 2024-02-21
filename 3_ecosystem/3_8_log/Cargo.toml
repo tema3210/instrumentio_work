@@ -3,3 +3,7 @@ name = "step_3_8"
 version = "0.1.0"
 edition = "2021"
 publish = false
+
+[dependencies]
+log="*"
+serde_json="*"
