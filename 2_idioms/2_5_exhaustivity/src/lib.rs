@@ -7,14 +7,16 @@ pub trait EventSourced<Ev: ?Sized> {
 /// we turn it into `Box<dyn ApplyEv<crate::user::User>>` and throw in `.apply(_)` call
 /// Cost: allocation, but I suspect that in closed world assumption devirtualization can kick in
 /// + arena allocators can handle if not
-pub trait ApplyEv<T>
-{
-    fn apply(&self,to: &mut T);
+pub trait ApplyEv<T> {
+    fn apply(&self, to: &mut T);
 }
 
 /// the core impl
-impl<T,Ev> ApplyEv<T> for Ev where T: EventSourced<Self> {
-    fn apply(&self,to: &mut T) {
+impl<T, Ev> ApplyEv<T> for Ev
+where
+    T: EventSourced<Self>,
+{
+    fn apply(&self, to: &mut T) {
         EventSourced::apply(to, self)
     }
 }
@@ -30,7 +32,6 @@ pub mod user {
     use std::time::SystemTime;
 
     use super::{event, EventSourced};
-
 
     /// this must have been a user repo
     #[derive(Debug)]
@@ -56,11 +57,7 @@ pub mod user {
 
     impl EventSourced<event::UserNameUpdated> for User {
         fn apply(&mut self, ev: &event::UserNameUpdated) {
-            let event::UserNameUpdated {
-                name,
-                user_id,
-                at,
-            } = ev;
+            let event::UserNameUpdated { name, user_id, at } = ev;
             self.name = name.clone();
         }
     }
@@ -88,7 +85,7 @@ pub mod user {
         }
     }
 
-    // fields    
+    // fields
 
     #[derive(Clone, Copy, Debug)]
     pub struct Id(pub u64);
@@ -109,9 +106,9 @@ pub mod user {
 pub mod event {
 
     //! So far, whenever we create a new Event, all the service subs who can consume it
-    //! just implement the `EvenSourced` trait; then dispatch code in the 
+    //! just implement the `EvenSourced` trait; then dispatch code in the
     //! event consumption module gets comp time error that they cannot send the event to a service (during casting into a `Box<dyn ApplyEv<_>>`)
-    //! 
+    //!
     //! Or, we could slap `#[non_exhaustive]` on that event enum... =)
 
     use std::time::SystemTime;
@@ -148,7 +145,4 @@ pub mod event {
         pub user_id: user::Id,
         pub at: user::DeletionDateTime,
     }
-
-
-
 }

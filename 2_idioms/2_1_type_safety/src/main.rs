@@ -38,7 +38,7 @@ struct Post<State: states::Sealed> {
     user_id: user::Id,
     title: post::Title,
     body: post::Body,
-    _ph: PhantomData<State>
+    _ph: PhantomData<State>,
 }
 
 impl Post<states::New> {
@@ -48,7 +48,7 @@ impl Post<states::New> {
             id: self.id,
             user_id: self.user_id,
             title: self.title,
-            body: self.body
+            body: self.body,
         }
     }
 }
@@ -60,7 +60,7 @@ impl Post<states::Unmoderated> {
             id: self.id,
             user_id: self.user_id,
             title: self.title,
-            body: self.body
+            body: self.body,
         }
     }
 }
@@ -72,7 +72,7 @@ impl Post<states::Published> {
             id: self.id,
             user_id: self.user_id,
             title: self.title,
-            body: self.body
+            body: self.body,
         }
     }
 }
@@ -83,11 +83,10 @@ impl Post<states::Deleted> {
             id: self.id,
             user_id: self.user_id,
             title: self.title,
-            body: self.body
+            body: self.body,
         }
     }
 }
-
 
 fn main() {
     println!("Implement me!");
