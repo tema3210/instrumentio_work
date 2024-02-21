@@ -12,6 +12,4 @@ pub use self::{my_error::MyError, my_iterator_ext::MyIteratorExt};
 /// ```compile_fail
 /// MyError::type_id("a static ref", ??)
 /// ```
-fn run_me() {
-
-}
+fn run_me() {}

@@ -43,7 +43,7 @@ impl<T: Clone + PartialEq> Solver<T> {
                 }
                 t.rotate();
             }
-        };
+        }
         let _ = std::mem::replace(&mut self.unsolved, unsolved);
     }
 }
