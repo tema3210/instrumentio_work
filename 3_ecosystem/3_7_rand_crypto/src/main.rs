@@ -5,11 +5,11 @@ use base64ct::Encoding;
 use rand::rngs::OsRng;
 use uuid::Uuid;
 
-fn generate_password(alphabet: &[char],len: u8) -> String {
+fn generate_password(alphabet: &[char], len: u8) -> String {
     let mut s = String::with_capacity(len as usize);
     for _ in 0..len {
         s.push(*select_rand_val(alphabet))
-    };
+    }
     s.shrink_to_fit();
     s
 }
@@ -23,7 +23,7 @@ fn new_access_token() -> Uuid {
 }
 
 fn get_file_hash(path: PathBuf) -> String {
-    use sha3::{Digest,Sha3_512};
+    use sha3::{Digest, Sha3_512};
 
     let mut hasher = Sha3_512::new();
 
@@ -45,25 +45,20 @@ fn get_file_hash(path: PathBuf) -> String {
     }
 
     let hash = hasher.finalize();
-    base64ct::Base64::encode_string(&hash) 
-
-
+    base64ct::Base64::encode_string(&hash)
 }
-
 
 //use argon2
 fn hash_password<S: AsRef<str>>(pass: S) -> Option<String> {
-
     let argon2 = Argon2::default();
 
     let salt = SaltString::generate(&mut OsRng);
-    
-    argon2.hash_password(pass.as_ref().as_bytes(), &salt)
-        .ok().map(|h| h.to_string())
+
+    argon2
+        .hash_password(pass.as_ref().as_bytes(), &salt)
+        .ok()
+        .map(|h| h.to_string())
 }
-
-
-
 
 fn main() {
     println!("Implement me!");
