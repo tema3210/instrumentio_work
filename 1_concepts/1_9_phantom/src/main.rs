@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, ops::RangeBounds};
+use std::marker::PhantomData;
 
 
 struct Fact<T> {
@@ -13,15 +13,16 @@ impl<T> Fact<T> {
     }
 }
 
+static FACTS_FOR_VEC: &[&str] = &[
+    "Vec is heap-allocated",
+    "Vec may re-allocate on growing",
+    "Vec is best collection EVAR!!!!1!"
+];
+
 impl Fact<Vec<u64>> {
     fn fact(&self) -> &'static str {
-        let r = rand::random::<usize>();
-        let facts = [
-            "Vec is heap-allocated",
-            "Vec may re-allocate on growing",
-            "Vec is best collection EVAR!!!!1!"
-        ];
-        facts[r % facts.len()]
+        // stalo bolshe texta =\
+        FACTS_FOR_VEC[rand::Rng::gen_range(&mut rand::thread_rng(), 0..FACTS_FOR_VEC.len())]
     }
 }
 
