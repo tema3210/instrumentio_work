@@ -70,6 +70,7 @@ Each step must be performed as a separate [PR (pull request)][PR] with an approp
 
 - [x] [0. Become familiar with Rust basics][Step 0] (3 days)
 - [ ] [1. Concepts][Step 1] (2 days, after all sub-steps)
+
     - [x] [1.1. Default values, cloning and copying][Step 1.1] (1 day)
     - [x] [1.2. Boxing and pinning][Step 1.2] (1 day)
     - [x] [1.1. Default values, cloning and copying][Step 1.1] (1 day)
@@ -79,7 +80,7 @@ Each step must be performed as a separate [PR (pull request)][PR] with an approp
     - [x] [1.4. Clone-on-write][Step 1.4] (1 day)
     - [x] [1.5. Conversions, casting and dereferencing][Step 1.5] (1 day)
     - [x] [1.6. Static and dynamic dispatch][Step 1.6] (1 day)
-    - [ ] [1.7. `Sized` and `?Sized` types][Step 1.7] (1 day)
+    - [x] [1.7. `Sized` and `?Sized` types][Step 1.7] (1 day)
     - [ ] [1.8. Thread safety][Step 1.8] (1 day)
     - [ ] [1.9. Phantom types][Step 1.9] (1 day)
 - [ ] [2. Idioms][Step 2] (2 days, after all sub-steps)
