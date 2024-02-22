@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
+
 
 #[derive(Hash,PartialEq,Eq)]
 struct Product {
@@ -104,14 +105,20 @@ impl InCoins {
     }
 }
 
+/// in Value here first is what we have second is what we can have
+pub type Stock = HashMap<Product,(u8,u8)>;
+
+
 struct VendingMachine {
-    stored: HashMap<Product,u8>,
+    stored: Stock,
     has: InCoins
 }
 
+type Purchase = ([Product;1],InCoins);
+
 impl VendingMachine {
-    fn purchase(&mut self,what: Product, money: InCoins) -> Option<([Product;1],InCoins)> {
-        if self.stored[&what] > 1 {
+    fn purchase(&mut self,what: Product, money: InCoins) -> Option<Purchase> {
+        if self.stored[&what].0 > 1 {
             if money.total() < what.price {
                 return None
             };
@@ -120,6 +127,116 @@ impl VendingMachine {
             Some(([what],change))
         } else {
             None
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.stored.iter().all(|(_,(c,_))| *c == 0)
+    }
+
+    fn is_full(&self) -> bool {
+        self.stored.iter().all(|(_,(s,c))| *s == *c)
+    }
+
+
+    fn stock(&mut self, new: Stock) {
+        for (k,(got,_)) in new {
+            use std::collections::hash_map::Entry;
+            match self.stored.entry(k) {
+                Entry::Occupied(mut oe) => {
+                    let (s,c) = oe.get_mut();
+                    *s = (*s + got).clamp(0, *c);
+                },
+                _ => {
+                    eprintln!("cannot stock what we don't have cap for")
+                }
+            }
+        }
+    } 
+}
+
+
+// if we had CTFE enums of stable all that we wrote below could be replaced with
+// one enum and 2 impls (for type and for enum for conv ops)
+mod states {
+    pub trait Seal {}
+
+    /// Invariant: the `VendingMachine` must be `is_empty() == true`
+    pub struct Empty;
+
+    impl Seal for Empty {}
+
+    pub struct Full;
+
+    /// Same but for `is_full`
+    impl Seal for Full {}
+
+
+    pub struct CanAccept; //could have slapped there a Product as a const param but to use this we'd need dependent typing
+
+
+    impl Seal for CanAccept {}
+}
+
+
+struct SafeVendingMachine<S: states::Seal>(VendingMachine,PhantomData<S>);
+
+// i want anonymous enums
+enum Stocked {
+    CanAccept(SafeVendingMachine<states::CanAccept>),
+    Full(SafeVendingMachine<states::Full>)
+}
+
+impl SafeVendingMachine<states::Empty> {
+    fn stock(mut self, goods: Stock) -> Stocked {
+        self.0.stock(goods);
+
+        assert!(!self.0.is_empty());
+        if self.0.is_full() {
+            Stocked::Full(SafeVendingMachine(self.0,PhantomData))
+        } else {
+            Stocked::CanAccept(SafeVendingMachine(self.0,PhantomData))
+        }
+    }
+}
+
+// i want anonymous enums
+enum Purchased {
+    Empty(SafeVendingMachine<states::Empty>),
+    CanAccept(SafeVendingMachine<states::CanAccept>)
+}
+
+impl SafeVendingMachine<states::CanAccept> {
+    
+    fn stock(mut self, goods: Stock) -> Stocked {
+        self.0.stock(goods);
+
+        assert!(!self.0.is_empty());
+        if self.0.is_full() {
+            
+            Stocked::Full(SafeVendingMachine(self.0,PhantomData))
+        } else {
+            Stocked::CanAccept(SafeVendingMachine(self.0,PhantomData))
+        }
+    }
+
+    fn purchase(mut self,what: Product, money: InCoins) -> (Option<Purchase>,Purchased) {
+        let result = self.0.purchase(what, money);
+        if self.0.is_empty() {
+            (result,Purchased::Empty(SafeVendingMachine(self.0,PhantomData)))
+        } else {
+            (result,Purchased::CanAccept(SafeVendingMachine(self.0,PhantomData)))
+        }
+    }
+}
+
+impl SafeVendingMachine<states::Full> {
+    fn purchase(mut self,what: Product, money: InCoins) -> (Option<Purchase>,Purchased) {
+        let result = self.0.purchase(what, money);
+        if self.0.is_empty() {
+            (result,Purchased::Empty(SafeVendingMachine(self.0,PhantomData)))
+        } else {
+            (result,Purchased::CanAccept(SafeVendingMachine(self.0,PhantomData)))
         }
     }
 }
