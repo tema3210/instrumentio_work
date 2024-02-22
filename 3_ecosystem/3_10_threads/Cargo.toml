@@ -3,3 +3,7 @@ name = "step_3_10"
 version = "0.1.0"
 edition = "2021"
 publish = false
+
+[dependencies]
+rand="*"
+crossbeam-channel="0.5"
