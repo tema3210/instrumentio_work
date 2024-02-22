@@ -7,3 +7,4 @@ publish = false
 [dependencies]
 log="*"
 serde_json="*"
+once_cell="*"

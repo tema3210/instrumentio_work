@@ -1,12 +1,8 @@
 use std::{
-    fmt::format,
-    fs::File,
-    io::Write,
-    mem::zeroed,
-    path::{Path, PathBuf},
-    sync::Mutex,
-    io::BufWriter
+    fmt::format, fs::File, io::{BufWriter, Write}, iter::Once, mem::zeroed, path::{Path, PathBuf}, sync::Mutex
 };
+
+use once_cell::sync::OnceCell;
 
 struct AppLog;
 
@@ -16,6 +12,16 @@ impl AppLog {
     }
 }
 
+ fn make_json_message<M: AsRef<str>>(lvl: log::Level,rec: &log::Record, msg: M) -> serde_json::Value {
+    let value = serde_json::json!({
+        "lvl": lvl.as_str(),
+        "time": format!("{:?}",std::time::Instant::now()),
+        "file": rec.file(),
+        "msg": msg.as_ref()
+    });
+    value
+ }
+
 impl log::Log for AppLog {
     fn enabled(&self, _: &log::Metadata) -> bool {
         true
@@ -23,13 +29,11 @@ impl log::Log for AppLog {
 
     fn log(&self, record: &log::Record) {
         if record.level() > log::Level::Warn {
-            std::io::stderr()
-                .write_fmt(*record.args())
-                .expect("cannot write to stderr");
+            let msg = make_json_message(record.level(), record, record.args().as_str().unwrap_or(""));
+            write!(std::io::stderr(),"{}",msg.to_string()).unwrap();
         } else {
-            std::io::stdout()
-                .write_fmt(*record.args())
-                .expect("cannot write to stdout");
+            let msg = make_json_message(record.level(), record, record.args().as_str().unwrap_or(""));
+            write!(std::io::stdout(),"{}",msg.to_string()).unwrap();
         }
     }
 
@@ -39,39 +43,33 @@ impl log::Log for AppLog {
     }
 }
 
-struct AccessLog(Mutex<(BufWriter<File>, String)>);
+struct AccessLog(OnceCell<(Mutex<BufWriter<File>>, String)>);
 
 impl AccessLog {
     fn init<P: AsRef<Path>>(to: P) {
         let file = File::create(to.as_ref()).unwrap();
         let fname = to.as_ref().file_name().unwrap();
-        // now mutex holds absolutely invalid instance
-        static INSTANCE: AccessLog = Self(Mutex::new((unsafe { zeroed() }, String::new())));
+        // now mutex holds absolutely invalid instance which we cannot create
+        static INSTANCE: AccessLog = AccessLog(OnceCell::new());
 
-        // we insert a valid instance there
-        INSTANCE
-            .0
-            .lock()
-            .map(|mut g| {
-                g.0 = BufWriter::new(file);
-                g.1 = fname.to_str().expect("cannot name a file").to_owned()
-            })
-            .expect("cannot lock empty mutex");
+        INSTANCE.0.get_or_init(|| (
+            Mutex::new(BufWriter::new(file)),
+            fname.to_str().expect("cannot name a file").to_owned()
+        ));
+
 
         log::set_logger(&INSTANCE).expect("cannot set logger");
     }
 
-    fn write_message<M: AsRef<str>>(&self, lvl: log::Level, msg: M) {
-        self.0
+    fn write_message<M: AsRef<str>>(&self,val: serde_json::Value) {
+        self
+            .0
+            .get()
+            .expect("cannot get")
+            .0
             .lock()
             .map(|mut g| {
-                let value = serde_json::json!({
-                    "lvl": lvl.as_str(),
-                    "time": format!("{:?}",std::time::Instant::now()),
-                    "file": g.1,
-                    "msg": msg.as_ref()
-                });
-                writeln!(&mut g.0,"{}", value).expect("cannot write the message");
+                writeln!(&mut g,"{}", val.to_string()).expect("cannot write the message");
             })
             .expect("death");
     }
@@ -86,13 +84,17 @@ impl log::Log for AccessLog {
         let Some(s) = record.args().as_str() else {
             panic!("cannot get the data")
         };
-        self.write_message(record.level(), s)
+        self.write_message::<&str>(make_json_message(record.level(), record, s))
     }
 
     fn flush(&self) {
-        self.0
+        self
+            .0
+            .get()
+            .expect("cannot get")
+            .0
             .lock()
-            .map(|mut f| f.0.flush().expect("cannot flush"))
+            .map(|mut f| f.flush().expect("cannot flush"))
             .expect("cannot lock");
     }
 }
