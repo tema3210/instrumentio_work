@@ -1,82 +1,47 @@
 use proc_macro::{Group, Ident, Literal, Punct, Spacing, TokenStream, TokenTree};
 
-macro_rules! nxt {
-    ($t:ident,$l:lifetime) => {
-        {
-            let Some(item) = $t.next() else {
-                break $l Err("not present")
-            };
-            item
+use quote::quote;
+use syn::{parse::Parse, parse_macro_input, Token};
+
+
+struct KeyValuePairs(
+    Vec<(syn::Expr,syn::Expr)>
+);
+
+impl Parse for KeyValuePairs {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut acc = vec![];
+        loop {
+            if input.is_empty() {
+                break Ok(Self(acc));
+            }
+            let key: syn::Expr = input.parse()?;
+            let _: Token![=>] = input.parse()?;
+            let value: syn::Expr = input.parse()?;
+            let _: syn::Token![,] = input.parse();
+
+            acc.push((key,value))
         }
-    };
-    ($p:pat,$t:ident,$l:lifetime) => {
-        let $p = nxt!($t,$l) else {
-            break $l Err("bad input for pattern");
-        };
+        
     }
 }
-
 /// works only with literals since i'm lazy
 #[proc_macro]
 pub fn btreemap(toks: TokenStream) -> TokenStream {
-    // literal, punct(=), punct(>), literal
-    //           s: joint  s: alone
-    // punct(,) *
+    let input = parse_macro_input!(toks as KeyValuePairs);
 
-    let mut pairs = Vec::new();
+    let iter = input.0.iter().map(|(k,v)| {
+        quote::quote!(
+            btreemap.insert(#k,#v);
+        )
+    });
 
-    let mut iter = toks.into_iter().peekable();
-    'm: loop {
-        // generates let or throws
-        nxt!(TokenTree::Literal(key),iter,'m);
-
-        nxt!(TokenTree::Punct(p),iter,'m);
-        if p != '=' {
-            break 'm Err("bad input 1");
-        }
-
-        nxt!(TokenTree::Punct(p),iter,'m);
-        if p != '>' {
-            break 'm Err("bad input 2");
-        }
-
-        nxt!(TokenTree::Literal(val),iter,'m);
-
-        pairs.push((key, val));
-        // match the comma
-
-        match iter.peek() {
-            Some(TokenTree::Punct(comma)) if *comma == ',' => {
-                let _ = iter.next();
-                continue;
-            }
-            None => break 'm Ok(()),
-            Some(_) => break 'm Err("bad input 3"),
-        }
-    }
-    .unwrap();
-
-    // assemble the data insertion code
-    let data = pairs
-        .into_iter()
-        .fold(String::new(), |mut data, (key, value)| {
-            data.push_str(&format!("btreemap.insert({},{});\n", key, value));
-            data
-        });
-
-    // assemble the result
-    let result = format!(
-        "{}{}{}",
-        "
+    let expr = quote::quote!(
         {
             let mut btreemap = std::collections::BTreeMap::new();
-        ",
-        data,
-        "
-            btreemap
+            #(#iter)*
         }
-        "
     );
 
-    result.parse().unwrap()
+    TokenStream::from(expr)
 }
