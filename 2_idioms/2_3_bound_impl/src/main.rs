@@ -8,7 +8,7 @@ fn main() {
 }
 
 /// A projected state built from a series of events.
-pub trait Aggregate: Default {
+pub trait Aggregate {
     /// A static string representing the type of the aggregate.
     ///
     /// Note: This should effectively be a constant value, and should never change.
@@ -39,7 +39,7 @@ pub trait Event {
 }
 
 /// An event that can be applied to an aggregate.
-pub trait AggregateEvent<A: Aggregate>: Event {
+pub trait AggregateEvent<A: Aggregate + ?Sized>: Event {
     /// Consumes the event, applying its effects to the aggregate.
     fn apply_to(self, aggregate: &mut A);
 }
