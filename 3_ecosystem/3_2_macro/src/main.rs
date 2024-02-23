@@ -1,5 +1,5 @@
 macro_rules! btreemap {
-    ($( $key:expr => $val:expr ),*) => {
+    {$( $key:expr => $val:expr ),* $(,)?} => {
         {
             let mut btreemap = std::collections::BTreeMap::new();
             $(
@@ -11,10 +11,10 @@ macro_rules! btreemap {
 }
 
 fn main() {
-    let map1 = btreemap!(
+    let map1 = btreemap! { 
         "k1" => "v1",
-        "k2" => "v2"
-    );
+        "k2" => "v2",
+    };
 
     let map2 = proc_crate::btreemap!(
         "k1" => "v1",
