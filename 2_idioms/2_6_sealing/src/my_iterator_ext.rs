@@ -8,8 +8,12 @@ use std::fmt;
 
 use self::format::{Format, FormatWith};
 
+mod sealed {
+    pub trait Seal {}
+}
+
 /// Extension trait for an [`Iterator`].
-pub trait MyIteratorExt: Iterator {
+pub trait MyIteratorExt: Iterator + sealed::Seal {
     /// Format all iterator elements, separated by `sep`.
     ///
     /// All elements are formatted (any formatting trait)
@@ -70,7 +74,7 @@ pub trait MyIteratorExt: Iterator {
     }
 }
 
-impl<T> MyIteratorExt for T where T: Iterator {}
+impl<T> MyIteratorExt for T where T: Iterator + sealed::Seal {}
 
 mod format {
     use std::{cell::RefCell, fmt};
