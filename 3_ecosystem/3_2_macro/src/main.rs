@@ -18,7 +18,7 @@ fn main() {
 
     let map2 = proc_crate::btreemap!(
         "k1" => "v1",
-        "k2" => "v2"
+        "k2" => "v2",
     );
 
     println!("map1 {:?} and map2 {:?}", &map1, &map2);

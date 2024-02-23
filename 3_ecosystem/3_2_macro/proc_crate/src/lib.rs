@@ -18,9 +18,19 @@ impl Parse for KeyValuePairs {
             let key: syn::Expr = input.parse()?;
             let _: Token![=>] = input.parse()?;
             let value: syn::Expr = input.parse()?;
-            let _: syn::Token![,] = input.parse();
 
-            acc.push((key,value))
+            match input.parse::<syn::Token![,]>() {
+                Ok(_) => {
+                    acc.push((key,value))
+                },
+                Err(_) => {
+                    if input.is_empty() {
+                        acc.push((key,value))
+                    } else {
+                        break Err(input.error("has to be comma here"))
+                    }
+                },
+            }
         }
         
     }
@@ -40,6 +50,7 @@ pub fn btreemap(toks: TokenStream) -> TokenStream {
         {
             let mut btreemap = std::collections::BTreeMap::new();
             #(#iter)*
+            btreemap
         }
     );
 
