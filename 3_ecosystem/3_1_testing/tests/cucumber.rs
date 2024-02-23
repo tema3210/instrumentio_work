@@ -96,8 +96,6 @@ fn hb(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
 fn pass(world: &mut GameWorld, what: String) -> Result<(), std::borrow::Cow<'static, str>> {
     world.write_stdin_line(&what)?;
     world.strings_we_wrote.push(what);
-    // the wait here is to let the process to work
-    // std::thread::sleep(Duration::from_secs(2));
     Ok(())
 }
 
@@ -105,8 +103,6 @@ fn pass(world: &mut GameWorld, what: String) -> Result<(), std::borrow::Cow<'sta
 fn try_win(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     world.write_stdin_line(world.the_number.to_string())?;
     world.strings_we_wrote.push(world.the_number.to_string());
-    // the wait here is to let the process to work
-    // std::thread::sleep(Duration::from_secs(2));
     Ok(())
 }
 
