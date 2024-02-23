@@ -1,11 +1,16 @@
 use cucumber::{given, then, when, writer::out::WriteStrExt, World};
-use std::{fmt::format, io::{BufRead, BufReader}, process::{Child, ChildStdin, ChildStdout, Stdio}, time::Duration};
-use tracing::{event,Level};
+use std::{
+    fmt::format,
+    io::{BufRead, BufReader},
+    process::{Child, ChildStdin, ChildStdout, Stdio},
+    time::Duration,
+};
+use tracing::{event, Level};
 
 const MAX_NUMBER_TO_GUESS: usize = 100;
 
 // `World` is your shared, likely mutable state.
-// Cucumber constructs it via `Default::default()` for each scenario. 
+// Cucumber constructs it via `Default::default()` for each scenario.
 #[derive(Debug, World)]
 pub struct GameWorld {
     the_number: usize,
@@ -27,13 +32,15 @@ impl GameWorld {
         match res {
             Ok(0) => Ok(None),
             Ok(_) => Ok(Some(line)),
-            Err(_) => Err("cannot read from pipe".into())
+            Err(_) => Err("cannot read from pipe".into()),
         }
     }
 
     fn write_stdin_line<S: AsRef<str>>(&mut self, s: S) -> Result<(), Error> {
-        event!(Level::INFO,"Write to a child thread");
-        self.stdin.write_str(format!("{}\n",s.as_ref())).map_err(|_| "cannot write to child".into())
+        event!(Level::INFO, "Write to a child thread");
+        self.stdin
+            .write_str(format!("{}\n", s.as_ref()))
+            .map_err(|_| "cannot write to child".into())
     }
 }
 
@@ -70,29 +77,23 @@ impl Default for GameWorld {
             stdin,
             stdout,
             //
-            strings_we_wrote: vec![]
+            strings_we_wrote: vec![],
         }
     }
 }
 
 // Steps are defined with `given`, `when` and `then` attributes.
 #[given("a program is running")]
-fn hb(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
+fn hb(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     match world.game.try_wait() {
-        Ok(Some(status)) => {
-            Err(format!("died: {status}").into())
-        },
-        Ok(None) => {
-            Ok(())
-        },
-        Err(e) => {
-            Err(format!("Error waiting: {e}").into())
-        },
+        Ok(Some(status)) => Err(format!("died: {status}").into()),
+        Ok(None) => Ok(()),
+        Err(e) => Err(format!("Error waiting: {e}").into()),
     }
 }
 
 #[when(expr = "we pass string: {}")]
-fn pass(world: &mut GameWorld,what: String) -> Result<(),std::borrow::Cow<'static, str>> {
+fn pass(world: &mut GameWorld, what: String) -> Result<(), std::borrow::Cow<'static, str>> {
     world.write_stdin_line(&what)?;
     world.strings_we_wrote.push(what);
     // the wait here is to let the process to work
@@ -101,7 +102,7 @@ fn pass(world: &mut GameWorld,what: String) -> Result<(),std::borrow::Cow<'stati
 }
 
 #[when("we pass winning number")]
-fn try_win(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
+fn try_win(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     world.write_stdin_line(world.the_number.to_string())?;
     world.strings_we_wrote.push(world.the_number.to_string());
     // the wait here is to let the process to work
@@ -119,7 +120,7 @@ fn try_win(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
 // --# Too big!
 
 #[then("program ignores a line")]
-fn ignores(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
+fn ignores(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Guess the number!\n".into()));
 
@@ -136,7 +137,7 @@ fn ignores(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
 }
 
 #[then("program produces sane output")]
-fn same_output(world: &mut GameWorld) -> Result<(),String> {
+fn same_output(world: &mut GameWorld) -> Result<(), String> {
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Guess the number!\n".into()));
 
@@ -144,13 +145,9 @@ fn same_output(world: &mut GameWorld) -> Result<(),String> {
         let line = world.read_stdout_line()?;
         assert_eq!(line, Some("Please input your guess.\n".into()));
 
-
         if let Ok(num) = s.parse::<usize>() {
             let line = world.read_stdout_line()?;
-            assert_eq!(line, Some(format!(
-                "You guessed: {}\n",
-                num
-            )));
+            assert_eq!(line, Some(format!("You guessed: {}\n", num)));
 
             if num < world.the_number {
                 let line = world.read_stdout_line()?;
@@ -164,14 +161,13 @@ fn same_output(world: &mut GameWorld) -> Result<(),String> {
                 break;
             }
         }
-
     }
 
     Ok(())
 }
 
 #[then("we win")]
-fn we_win(world: &mut GameWorld) -> Result<(),String> {
+fn we_win(world: &mut GameWorld) -> Result<(), String> {
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Guess the number!\n".into()));
 
@@ -179,15 +175,16 @@ fn we_win(world: &mut GameWorld) -> Result<(),String> {
     assert_eq!(line, Some("Please input your guess.\n".into()));
 
     let line = world.read_stdout_line()?;
-    assert_eq!(line, Some(format!("You guessed: {}\n",world.the_number).into()));
+    assert_eq!(
+        line,
+        Some(format!("You guessed: {}\n", world.the_number).into())
+    );
 
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("You win!\n".into()));
 
     Ok(())
 }
-
-
 
 // This runs before everything else, so you can setup things here.
 fn main() {
