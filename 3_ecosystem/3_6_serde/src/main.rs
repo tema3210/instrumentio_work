@@ -1,16 +1,28 @@
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize,Serialize,PartialEq,Debug,Clone,Copy)]
+#[serde(into = "usize")]
+struct Price(usize);
+
+impl From<Price> for usize {
+    fn from(value: Price) -> Self {
+        value.0
+    }
+}
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 struct Gift {
     id: usize,
-    price: usize,
+    price: Price,
     description: String,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 struct Debug {
-    duration: String, //should really be a Duration
-    at: String,       // timestamp
+    duration: Duration, //should really be a Duration
+    at: chrono::DateTime<chrono::Utc>,       // timestamp
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
@@ -26,21 +38,22 @@ struct Stream {
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 struct PublicTariff {
     id: usize,
-    price: usize,
-    duration: String, //  ---
+    price: Price,
+    duration: Duration, //  ---
     description: String,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 struct PrivateTariff {
     client_price: usize,
-    duration: String, // ---
+    duration: Duration, // ---
     description: String,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 struct Request {
-    r#type: String,
+    #[serde(rename = "type")]
+    kind: String,
     stream: Stream,
     gifts: Vec<Gift>,
     debug: Debug,

@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 url = {version="2.5.0", features=["serde"]}
-# chrono = {features=["serde"], version="0.4.34"}
+chrono = {features=["serde"], version="0.4.34"}
 serde = "1"
 
 serde_json="*"
