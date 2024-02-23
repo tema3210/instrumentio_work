@@ -8,3 +8,4 @@ publish = false
 tokio={version="*", features=["full"]}
 reqwest={version="*", features=["gzip"]}
 clap={version="*", features=["derive"]}
+num_cpus = "1.16.0"
