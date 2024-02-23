@@ -4,11 +4,11 @@ Feature: Game
     Given a program is running
     When we pass string: 12
     And we pass string: 12
-    Then program produces same output
+    Then program produces sane output
   
   Scenario: Try to win a game 
     Given a program is running
-    When we pass string: 42
+    When we pass winning number
     Then we win
 
   Scenario: If we pass in a bad input 

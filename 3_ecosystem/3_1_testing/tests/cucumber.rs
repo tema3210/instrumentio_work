@@ -1,18 +1,21 @@
 use cucumber::{given, then, when, writer::out::WriteStrExt, World};
-use std::{io::{BufRead, BufReader}, process::{Child, ChildStdin, ChildStdout, Stdio}, time::Duration};
+use std::{fmt::format, io::{BufRead, BufReader}, process::{Child, ChildStdin, ChildStdout, Stdio}, time::Duration};
 use tracing::{event,Level};
 
-
-const THE_NUMBER: usize = 42;
+const MAX_NUMBER_TO_GUESS: usize = 100;
 
 // `World` is your shared, likely mutable state.
 // Cucumber constructs it via `Default::default()` for each scenario. 
 #[derive(Debug, World)]
 pub struct GameWorld {
+    the_number: usize,
     game: Child,
     stdin: ChildStdin,
     stdout: BufReader<ChildStdout>,
     pid: u32,
+
+    /// the data we carry through scenarios
+    strings_we_wrote: Vec<String>,
 }
 
 type Error = std::borrow::Cow<'static, str>;
@@ -46,8 +49,10 @@ impl Default for GameWorld {
 
         let program = env!("CARGO_BIN_EXE_step_3_1");
 
+        let the_number: usize = rand::random::<usize>() % (MAX_NUMBER_TO_GUESS + 1);
+
         let mut child = Command::new(program)
-            .arg(THE_NUMBER.to_string())
+            .arg(the_number.to_string())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -60,9 +65,12 @@ impl Default for GameWorld {
 
         Self {
             game: child,
+            the_number,
             pid,
             stdin,
-            stdout
+            stdout,
+            //
+            strings_we_wrote: vec![]
         }
     }
 }
@@ -85,12 +93,21 @@ fn hb(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
 
 #[when(expr = "we pass string: {}")]
 fn pass(world: &mut GameWorld,what: String) -> Result<(),std::borrow::Cow<'static, str>> {
-    world.write_stdin_line(what)?;
+    world.write_stdin_line(&what)?;
+    world.strings_we_wrote.push(what);
     // the wait here is to let the process to work
-    std::thread::sleep(Duration::from_secs(2));
+    // std::thread::sleep(Duration::from_secs(2));
     Ok(())
 }
 
+#[when("we pass winning number")]
+fn try_win(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
+    world.write_stdin_line(world.the_number.to_string())?;
+    world.strings_we_wrote.push(world.the_number.to_string());
+    // the wait here is to let the process to work
+    // std::thread::sleep(Duration::from_secs(2));
+    Ok(())
+}
 
 // the structure of output
 
@@ -118,28 +135,37 @@ fn ignores(world: &mut GameWorld) -> Result<(),std::borrow::Cow<'static, str>> {
     Ok(())
 }
 
-#[then("program produces same output")]
+#[then("program produces sane output")]
 fn same_output(world: &mut GameWorld) -> Result<(),String> {
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Guess the number!\n".into()));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("Please input your guess.\n".into()));
+    for s in world.strings_we_wrote.clone() {
+        let line = world.read_stdout_line()?;
+        assert_eq!(line, Some("Please input your guess.\n".into()));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("You guessed: 12\n".into()));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("Too small!\n".into()));
+        if let Ok(num) = s.parse::<usize>() {
+            let line = world.read_stdout_line()?;
+            assert_eq!(line, Some(format!(
+                "You guessed: {}\n",
+                num
+            )));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("Please input your guess.\n".into()));
+            if num < world.the_number {
+                let line = world.read_stdout_line()?;
+                assert_eq!(line, Some("Too small!\n".into()));
+            } else if num > world.the_number {
+                let line = world.read_stdout_line()?;
+                assert_eq!(line, Some("Too big!\n".into()));
+            } else {
+                let line = world.read_stdout_line()?;
+                assert_eq!(line, Some("You win!\n".into()));
+                break;
+            }
+        }
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("You guessed: 12\n".into()));
-
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("Too small!\n".into()));
+    }
 
     Ok(())
 }
@@ -153,7 +179,7 @@ fn we_win(world: &mut GameWorld) -> Result<(),String> {
     assert_eq!(line, Some("Please input your guess.\n".into()));
 
     let line = world.read_stdout_line()?;
-    assert_eq!(line, Some(format!("You guessed: {}\n",THE_NUMBER).into()));
+    assert_eq!(line, Some(format!("You guessed: {}\n",world.the_number).into()));
 
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("You win!\n".into()));
