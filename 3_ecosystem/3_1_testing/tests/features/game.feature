@@ -33,7 +33,7 @@ Feature: Game
 
   Scenario: Player guesses after wrong input
     Given a program is running
-    When we pass string: foo
+    When player passes string: foo
     And player passes winning number
     # Then program works as intended
     Then we win

@@ -87,5 +87,28 @@ mod tests {
             }
         }
 
+        #[test]
+        fn greater_is_consistent(secret in 0..1000u32,guess in 0..1000u32) {
+            let res = game_logic(guess,secret);
+
+            if guess > secret {
+                prop_assert!(matches!(res, GuessResult::EnteredGreater));
+
+            } else {
+                prop_assert!(matches!(res, GuessResult::Won | GuessResult::EnteredLess));
+            }
+        }
+
+        #[test]
+        fn lesser_is_consistent(secret in 0..1000u32,guess in 0..1000u32) {
+            let res = game_logic(guess,secret);
+
+            if guess < secret {
+                prop_assert!(matches!(res, GuessResult::EnteredLess));
+            } else {
+                prop_assert!(matches!(res, GuessResult::Won | GuessResult::EnteredGreater));
+            }
+        }
+
     }
 }
