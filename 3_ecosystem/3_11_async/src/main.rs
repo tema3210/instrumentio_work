@@ -7,28 +7,30 @@ use tokio::{fs::File, io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, runtime::
 #[derive(Parser)]
 #[command(version, about, long_about = None, author)]
 struct Args {
+    /// The file with urls, newline separated
+    file: PathBuf,
+
     /// maximum thread usage
+    #[arg(long)]
     max_threads: Option<usize>,
-    
-    file: PathBuf
 }
 
 /// download and save the site
-async fn download(link: Url) -> Option<()> {
+async fn download(link: Url) -> Result<(),String> {
     let fname: PathBuf = format!("./{}",link.as_ref()).parse().unwrap();
 
-    let res = reqwest::get(link).await.ok()?;
+    let res = reqwest::get(link).await.map_err(|_| "cannot get".to_string())?;
 
-    let bytes = res.bytes().await.ok()?;
+    let bytes = res.bytes().await.map_err(|_| "cannot get bytes".to_string())?;
 
-    let mut file = File::create(&fname).await.ok()?;
+    let mut file = File::create(&fname).await.map_err(|e| format!("cannot create file {e:?}"))?;
 
     match file.write_all(&bytes).await {
-        Ok(_) => return Some(()),
+        Ok(_) => return Ok(()),
         Err(_) => {
             drop(file);
             tokio::fs::remove_file(&fname).await.unwrap();
-            None
+            Err("cannot write to file".to_string())
         },
     }
 }
@@ -39,13 +41,13 @@ fn main() {
 
     let cpus = num_cpus::get();
 
-    let threads = args.max_threads.unwrap_or(cpus );
-
+    let threads = args.max_threads.unwrap_or(cpus);
 
     let runtime = Builder::new_multi_thread()
         .worker_threads(threads)
         .thread_name("my-example")
         .thread_stack_size(3 * 1024 * 1024)
+        .enable_all()
         .build()
         .unwrap();
 
@@ -71,11 +73,11 @@ fn main() {
         // Is there any primitive for this? like Go's groups
         for (h,url) in handles {
             match h.await {
-                Ok(Some(())) => {
+                Ok(Ok(())) => {
                     println!("Loaded {url}");
                 },
-                Ok(None) => {
-                    println!("Cannot load {url}")
+                Ok(Err(e)) => {
+                    println!("Cannot load {url}: {e}")
                 }
                 Err(_) => {
                     println!("Internal error")
