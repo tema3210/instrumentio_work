@@ -17,7 +17,9 @@ struct Args {
 
 /// download and save the site
 async fn download(link: Url) -> Result<(),String> {
-    let fname: PathBuf = format!("./{}",link.as_ref()).parse().unwrap();
+
+    let fname = link.as_ref().replace('/', "_");
+    let fname: PathBuf = format!("./\"{}\".html",fname).parse().unwrap();
 
     let res = reqwest::get(link).await.map_err(|_| "cannot get".to_string())?;
 
@@ -62,9 +64,10 @@ fn main() {
         while let Ok(l) = AsyncBufReadExt::read_line(&mut reader,&mut line).await {
             if l == 0 { break; }
 
-            let line = line.clone();
+            let line_inner = line.clone();
+            line.clear();
 
-            if let Ok(url) = Url::parse(&line) {
+            if let Ok(url) = Url::parse(&line_inner) {
                 let h = tokio::spawn(download(url.clone()));
                 handles.push((h,url));
             }
