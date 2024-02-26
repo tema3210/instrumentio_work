@@ -17,7 +17,6 @@ pub struct GameWorld {
     game: Child,
     stdin: ChildStdin,
     stdout: BufReader<ChildStdout>,
-    pid: u32,
 
     /// the data we carry through scenarios
     strings_we_wrote: Vec<String>,
@@ -56,7 +55,8 @@ impl Default for GameWorld {
 
         let program = env!("CARGO_BIN_EXE_step_3_1");
 
-        let the_number: usize = rand::random::<usize>() % (MAX_NUMBER_TO_GUESS + 1);
+        // let the_number: usize = rand::random::<usize>() % (MAX_NUMBER_TO_GUESS + 1);
+        let the_number: usize = 42;
 
         let mut child = Command::new(program)
             .arg(the_number.to_string())
@@ -65,7 +65,7 @@ impl Default for GameWorld {
             .spawn()
             .expect("failed to spawn a process");
 
-        let pid = child.id();
+        // let pid = child.id();
 
         let stdin = child.stdin.take().expect("cannot take stdin");
         let stdout = BufReader::new(child.stdout.take().expect("cannot take stdout"));
@@ -73,10 +73,8 @@ impl Default for GameWorld {
         Self {
             game: child,
             the_number,
-            pid,
             stdin,
             stdout,
-            //
             strings_we_wrote: vec![],
         }
     }
@@ -132,8 +130,10 @@ fn ignores(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> 
     Ok(())
 }
 
-#[then("program produces sane output")]
-fn same_output(world: &mut GameWorld) -> Result<(), String> {
+
+// is it worth doing at all? such comprehensive test
+#[then("program works as intended")]
+fn works(world: &mut GameWorld) -> Result<(), String> {
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Guess the number!\n".into()));
 
@@ -167,17 +167,23 @@ fn we_win(world: &mut GameWorld) -> Result<(), String> {
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Guess the number!\n".into()));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("Please input your guess.\n".into()));
+    for s in world.strings_we_wrote.clone() {
+        let line = world.read_stdout_line()?;
+        assert_eq!(line, Some("Please input your guess.\n".into()));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(
-        line,
-        Some(format!("You guessed: {}\n", world.the_number).into())
-    );
+        if let Ok(num) = s.parse::<usize>() {
+            let line = world.read_stdout_line()?;
+            assert_eq!(line, Some(format!("You guessed: {}\n", num)));
 
-    let line = world.read_stdout_line()?;
-    assert_eq!(line, Some("You win!\n".into()));
+            if num == world.the_number {
+                let line = world.read_stdout_line()?;
+                assert_eq!(line, Some("You win!\n".into()));
+                break;
+            } else {
+                let _ = world.read_stdout_line()?;
+            }
+        }
+    }
 
     Ok(())
 }

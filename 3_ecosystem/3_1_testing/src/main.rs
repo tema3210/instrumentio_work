@@ -1,11 +1,16 @@
 use std::{cmp::Ordering, env, io};
 
+enum GuessResult {
+    EnteredLess,
+    EnteredGreater,
+    Won,
+}
 
-fn game_logic(num: u32,secret_number: u32) -> (&'static str,bool) {
+fn game_logic(num: u32,secret_number: u32) -> GuessResult {
     match num.cmp(&secret_number) {
-        Ordering::Less => ("Too small!",false),
-        Ordering::Greater => ("Too big!",false),
-        Ordering::Equal => ("You win!",true)
+        Ordering::Less => GuessResult::EnteredLess, //("Too small!",false),
+        Ordering::Greater => GuessResult::EnteredGreater,//("Too big!",false),
+        Ordering::Equal => GuessResult::Won,//("You win!",true)
     }
 }
 
@@ -24,15 +29,17 @@ fn main() {
 
         println!("You guessed: {}", guess);
 
-        let (s,f) = game_logic(guess,secret_number);
-
-        println!("{s}");
-        if f { break; }
+        match game_logic(guess, secret_number) {
+            GuessResult::EnteredLess => println!("Too small!"),
+            GuessResult::EnteredGreater => println!("Too big!"),
+            GuessResult::Won => {
+                println!("You win!");
+                break;
+            },
+        }
     }
 }
 
-
-// we mock this 
 fn get_secret_number() -> u32 {
     let secret_number = env::args()
         .skip(1)
@@ -58,25 +65,25 @@ fn get_guess_number() -> Option<u32> {
 mod tests {
     use proptest::prelude::*;
 
-    use crate::game_logic;
+    use crate::{game_logic, GuessResult};
 
     #[test]
     fn win() {
-        let (_,won) = game_logic(10,10);
-        assert!(won);
+        let res = game_logic(10,10);
+        assert!(matches!(res, GuessResult::Won));
     }
 
     proptest! {
 
         #[test]
         fn not_wining_randomly(secret in 0..1000u32,guess in 0..1000u32) {
-            let (_,flag) = game_logic(guess,secret);
+            let res = game_logic(guess,secret);
 
-            if secret != guess {
-                prop_assert!(flag == false);
+            if secret == guess {
+                prop_assert!(matches!(res, GuessResult::Won));
                 
             } else {
-                prop_assert!(flag == true);
+                prop_assert!(matches!(res, GuessResult::EnteredGreater | GuessResult::EnteredLess));
             }
         }
 
