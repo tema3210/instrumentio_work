@@ -6,11 +6,11 @@ enum GuessResult {
     Won,
 }
 
-fn game_logic(num: u32,secret_number: u32) -> GuessResult {
+fn game_logic(num: u32, secret_number: u32) -> GuessResult {
     match num.cmp(&secret_number) {
-        Ordering::Less => GuessResult::EnteredLess, //("Too small!",false),
-        Ordering::Greater => GuessResult::EnteredGreater,//("Too big!",false),
-        Ordering::Equal => GuessResult::Won,//("You win!",true)
+        Ordering::Less => GuessResult::EnteredLess,
+        Ordering::Greater => GuessResult::EnteredGreater,
+        Ordering::Equal => GuessResult::Won,
     }
 }
 
@@ -35,7 +35,7 @@ fn main() {
             GuessResult::Won => {
                 println!("You win!");
                 break;
-            },
+            }
         }
     }
 }
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn win() {
-        let res = game_logic(10,10);
+        let res = game_logic(10, 10);
         assert!(matches!(res, GuessResult::Won));
     }
 
@@ -81,7 +81,7 @@ mod tests {
 
             if secret == guess {
                 prop_assert!(matches!(res, GuessResult::Won));
-                
+
             } else {
                 prop_assert!(matches!(res, GuessResult::EnteredGreater | GuessResult::EnteredLess));
             }

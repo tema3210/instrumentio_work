@@ -130,7 +130,6 @@ fn ignores(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> 
     Ok(())
 }
 
-
 // is it worth doing at all? such comprehensive test
 #[then("program works as intended")]
 fn works(world: &mut GameWorld) -> Result<(), String> {
