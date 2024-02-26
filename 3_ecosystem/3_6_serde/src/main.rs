@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize,Serialize,PartialEq,Debug,Clone,Copy)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone, Copy)]
 #[serde(into = "usize")]
 struct Price(usize);
 
@@ -31,7 +31,7 @@ mod custom {
             D: Deserializer<'de>,
         {
             let duration_str: String = Deserialize::deserialize(deserializer)?;
-    
+
             parse_duration_string(duration_str)
                 .map(DurationWrapper)
                 .map_err(serde::de::Error::custom)
@@ -52,56 +52,60 @@ mod custom {
             let seconds = total_seconds % 60;
 
             let mut res = String::with_capacity(200); // up to 1000 (excl) hours w\o relocate;
-            // but no api to append and fmt in the same time =(
+                                                      // but no api to append and fmt in the same time =(
 
             if hours != 0 {
-                res = format!("{}{}h",res,hours);
+                res = format!("{}{}h", res, hours);
             };
             if minutes != 0 {
-                res = format!("{}{}m",res,minutes);
+                res = format!("{}{}m", res, minutes);
             };
             if seconds != 0 {
-                res = format!("{}{}s",res,seconds);
+                res = format!("{}{}s", res, seconds);
             };
             if milliseconds != 0 {
-                res = format!("{}{}ms",res,milliseconds);
+                res = format!("{}{}ms", res, milliseconds);
             };
             if nanoseconds != 0 {
-                res = format!("{}{}ns",res,nanoseconds);
+                res = format!("{}{}ns", res, nanoseconds);
             };
 
             serializer.serialize_str(&res)
         }
     }
 
-
     fn parse_duration_string<S: AsRef<str>>(duration_str: S) -> Result<Duration, String> {
         let mut parsed_duration = Duration::default();
         let mut current_value = 0u64;
 
-
-        let mut cs = duration_str.as_ref().chars().filter(|ch| !ch.is_whitespace()).peekable();
+        let mut cs = duration_str
+            .as_ref()
+            .chars()
+            .filter(|ch| !ch.is_whitespace())
+            .peekable();
         loop {
             match cs.next() {
                 Some(c) => {
                     if let Some(d) = c.to_digit(10) {
-                        current_value = 10*current_value + d as u64;
+                        current_value = 10 * current_value + d as u64;
                     } else {
-                        match (c,cs.peek()) {
-                            ('s',_) => parsed_duration += Duration::from_secs(current_value),
-                            ('m',Some('s')) => {
+                        match (c, cs.peek()) {
+                            ('s', _) => parsed_duration += Duration::from_secs(current_value),
+                            ('m', Some('s')) => {
                                 parsed_duration += Duration::from_millis(current_value);
                                 let _ = cs.next(); //ignore that 's'
-                            },
-                            ('m',_) => parsed_duration += Duration::from_secs(current_value * 60),
-                            ('h',_) => parsed_duration += Duration::from_secs(current_value * 60 * 60),
+                            }
+                            ('m', _) => parsed_duration += Duration::from_secs(current_value * 60),
+                            ('h', _) => {
+                                parsed_duration += Duration::from_secs(current_value * 60 * 60)
+                            }
                             _ => return Err("Invalid duration unit".into()),
                         }
                         // Reset current_value for the next numeric value
                         current_value = 0;
                     }
-                },
-                None => break
+                }
+                None => break,
             }
         }
 
@@ -112,13 +116,12 @@ mod custom {
 
         Ok(parsed_duration)
     }
-
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 struct Debug {
     duration: custom::DurationWrapper,
-    at: chrono::DateTime<chrono::Utc>,       // timestamp
+    at: chrono::DateTime<chrono::Utc>, // timestamp
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
