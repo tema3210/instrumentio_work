@@ -90,14 +90,14 @@ fn hb(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     }
 }
 
-#[when(expr = "we pass string: {}")]
+#[when(expr = "player passes string: {}")]
 fn pass(world: &mut GameWorld, what: String) -> Result<(), std::borrow::Cow<'static, str>> {
     world.write_stdin_line(&what)?;
     world.strings_we_wrote.push(what);
     Ok(())
 }
 
-#[when("we pass winning number")]
+#[when("player passes winning number")]
 fn try_win(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     world.write_stdin_line(world.the_number.to_string())?;
     world.strings_we_wrote.push(world.the_number.to_string());
