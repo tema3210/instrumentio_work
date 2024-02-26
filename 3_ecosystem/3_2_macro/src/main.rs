@@ -11,7 +11,7 @@ macro_rules! btreemap {
 }
 
 fn main() {
-    let map1 = btreemap! { 
+    let map1 = btreemap! {
         "k1" => "v1",
         "k2" => "v2",
     };
