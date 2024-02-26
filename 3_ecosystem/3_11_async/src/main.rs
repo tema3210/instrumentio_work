@@ -1,7 +1,11 @@
-use std::{fmt::format, path::PathBuf};
 use clap::Parser;
 use reqwest::Url;
-use tokio::{fs::File, io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, runtime::Builder};
+use std::{fmt::format, path::PathBuf};
+use tokio::{
+    fs::File,
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    runtime::Builder,
+};
 
 /// util to download web pages
 #[derive(Parser)]
@@ -16,16 +20,22 @@ struct Args {
 }
 
 /// download and save the site
-async fn download(link: Url) -> Result<(),String> {
-
+async fn download(link: Url) -> Result<(), String> {
     let fname = link.as_ref().replace('/', "_");
-    let fname: PathBuf = format!("./\"{}\".html",fname).parse().unwrap();
+    let fname: PathBuf = format!("./\"{}\".html", fname).parse().unwrap();
 
-    let res = reqwest::get(link).await.map_err(|_| "cannot get".to_string())?;
+    let res = reqwest::get(link)
+        .await
+        .map_err(|_| "cannot get".to_string())?;
 
-    let bytes = res.bytes().await.map_err(|_| "cannot get bytes".to_string())?;
+    let bytes = res
+        .bytes()
+        .await
+        .map_err(|_| "cannot get bytes".to_string())?;
 
-    let mut file = File::create(&fname).await.map_err(|e| format!("cannot create file {e:?}"))?;
+    let mut file = File::create(&fname)
+        .await
+        .map_err(|e| format!("cannot create file {e:?}"))?;
 
     match file.write_all(&bytes).await {
         Ok(_) => return Ok(()),
@@ -33,10 +43,9 @@ async fn download(link: Url) -> Result<(),String> {
             drop(file);
             tokio::fs::remove_file(&fname).await.unwrap();
             Err("cannot write to file".to_string())
-        },
+        }
     }
 }
-
 
 fn main() {
     let args = Args::parse();
@@ -61,32 +70,33 @@ fn main() {
         let mut line = String::new();
 
         let mut handles = vec![];
-        while let Ok(l) = AsyncBufReadExt::read_line(&mut reader,&mut line).await {
-            if l == 0 { break; }
+        while let Ok(l) = AsyncBufReadExt::read_line(&mut reader, &mut line).await {
+            if l == 0 {
+                break;
+            }
 
             let line_inner = line.clone();
             line.clear();
 
             if let Ok(url) = Url::parse(&line_inner) {
                 let h = tokio::spawn(download(url.clone()));
-                handles.push((h,url));
+                handles.push((h, url));
             }
         }
 
         // Is there any primitive for this? like Go's groups
-        for (h,url) in handles {
+        for (h, url) in handles {
             match h.await {
                 Ok(Ok(())) => {
                     println!("Loaded {url}");
-                },
+                }
                 Ok(Err(e)) => {
                     println!("Cannot load {url}: {e}")
                 }
                 Err(_) => {
                     println!("Internal error")
-                },
+                }
             }
         }
-
     });
 }
