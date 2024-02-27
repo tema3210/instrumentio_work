@@ -132,7 +132,7 @@ fn works(world: &mut GameWorld) -> Result<(), String> {
             } else {
                 let line = world.read_stdout_line()?;
                 assert_eq!(line, Some("You win!\n".into()));
-                return Ok(())
+                return Ok(());
             }
         } // there's no else branch bc if we enter not a number program doesn't print anything special
     }
@@ -161,11 +161,10 @@ fn we_win(world: &mut GameWorld) -> Result<(), String> {
                 let _ = world.read_stdout_line()?;
             }
         };
-    };
+    }
 
     Err("didn't win".into())
 }
-
 
 fn main() {
     futures::executor::block_on(GameWorld::run("tests/features/"));
