@@ -85,7 +85,8 @@ impl AccessLog {
             .0
             .lock()
             .map(|mut g| {
-                writeln!(&mut g, "{}", val).expect("cannot write the message");
+                let _ = writeln!(&mut g, "{}", val);
+                let _ = g.flush();
             })
             .expect("death");
     }
@@ -100,7 +101,8 @@ impl log::Log for AccessLog {
         let Some(s) = record.args().as_str() else {
             panic!("cannot get the data")
         };
-        self.write_message(make_json_message(record.level(), record, s))
+        let msg = make_json_message(record.level(), record, s);
+        self.write_message(msg)
     }
 
     fn flush(&self) {
@@ -114,14 +116,14 @@ impl log::Log for AccessLog {
     }
 }
 
+const PATH: &str = "./access.log";
+
 fn main() {}
 
 #[cfg(test)]
 mod tests {
 
-    use crate::{AccessLog, AppLog};
-
-    const PATH: &'static str = "./access.log";
+    use crate::{AccessLog, AppLog, PATH};
 
     #[test]
     fn test_first_logger() {
