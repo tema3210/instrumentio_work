@@ -19,9 +19,47 @@ enum Precision {
     Asterisk,
 }
 
+type ToGet = (Option<Sign>, Option<usize>, Option<Precision>);
+
+const NOMATCH: ToGet = (None,None,None);
+
+
+
+fn parse_hand_version(input: &str) -> ToGet {
+    let mut chars = input.chars().peekable();
+
+    loop {
+        if matches!(chars.peek(),Some(ch) if ch.is_alphabetic()) {
+            let _fill = chars.next();
+        };
+
+        if matches!(chars.peek(),Some(ch) if ['<','^','>'].iter().find(|c| *c == ch).is_some()) {
+            let _align = chars.next();
+        }
+
+        let sign = match chars.peek() {
+            Some('+') => {
+                let _ = chars.next();
+                Some(Sign::Plus)
+            },
+            Some('-') => {
+                let _ = chars.next();
+                Some(Sign::Minus)
+            },
+            Some(_) => {
+                None
+            },
+            None => {
+                return NOMATCH;
+            }
+        };
+        
+    }
+}
+
 /// we take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
 /// we give back: sign,width,precision
-fn parse(input: &str) -> (Option<Sign>, Option<usize>, Option<Precision>) {
+fn parse(input: &str) -> ToGet {
     const REGEX3: &'static str = r#"
         (.?[<^>])?
         (?P<sign>[+\-])?
@@ -73,7 +111,54 @@ fn parse(input: &str) -> (Option<Sign>, Option<usize>, Option<Precision>) {
 }
 
 #[cfg(test)]
-mod spec {
+mod spec_hand {
+    use super::*;
+
+    #[test]
+    fn parses_sign() {
+        for (input, expected) in vec![
+            ("", None),
+            (">8.*", None),
+            (">+8.*", Some(Sign::Plus)),
+            ("-.1$x", Some(Sign::Minus)),
+            ("a^#043.8?", None),
+        ] {
+            let (sign, ..) = parse_hand_version(input);
+            assert_eq!(expected, sign, "on: {}", input);
+        }
+    }
+
+    #[test]
+    fn parses_width() {
+        for (input, expected) in vec![
+            ("", None),
+            (">8.*", Some(8)),
+            (">+8.*", Some(8)),
+            ("-.1$x", None),
+            ("a^#043.8?", Some(43)),
+        ] {
+            let (_, width, _) = parse_hand_version(input);
+            assert_eq!(expected, width, "on: {}", input);
+        }
+    }
+
+    #[test]
+    fn parses_precision() {
+        for (input, expected) in vec![
+            ("", None),
+            (">8.*", Some(Precision::Asterisk)),
+            (">+8.*", Some(Precision::Asterisk)),
+            ("-.1$x", Some(Precision::Argument(1))),
+            ("a^#043.8?", Some(Precision::Integer(8))),
+        ] {
+            let (_, _, precision) = parse_hand_version(input);
+            assert_eq!(expected, precision, "on: {}", input);
+        }
+    }
+}
+
+#[cfg(test)]
+mod spec_regex {
     use super::*;
 
     #[test]
