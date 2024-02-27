@@ -23,7 +23,13 @@ enum Precision {
 /// we give back: sign,width,precision
 fn parse(input: &str) -> (Option<Sign>, Option<usize>, Option<Precision>) {
     const REGEX3: &'static str = r#"
-    (.?[<^>])?(?P<sign>[+\-])?[#]?[0]?(?P<width>[0-9]+)?(\.(?P<precision>[0-9]+))?\w?
+        (.?[<^>])?
+        (?P<sign>[+\-])?
+        [#]?
+        [0]?
+        (?P<width>[0-9]+)?
+        (\.(?P<precision>[0-9]+))?
+        \w?
     "#;
 
     let the_regex = RegexBuilder::new(REGEX3).build().unwrap(); //should have this in lazy static
