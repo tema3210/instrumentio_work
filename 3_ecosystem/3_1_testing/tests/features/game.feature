@@ -28,12 +28,10 @@ Feature: Game
     Given a program is running
     When player passes string: 12
     And player passes winning number
-    # Then program works as intended
     Then we win
 
   Scenario: Player guesses after wrong input
     Given a program is running
     When player passes string: foo
     And player passes winning number
-    # Then program works as intended
     Then we win

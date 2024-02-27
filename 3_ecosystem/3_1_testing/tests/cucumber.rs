@@ -7,10 +7,6 @@ use std::{
 };
 use tracing::{event, Level};
 
-const MAX_NUMBER_TO_GUESS: usize = 100;
-
-// `World` is your shared, likely mutable state.
-// Cucumber constructs it via `Default::default()` for each scenario.
 #[derive(Debug, World)]
 pub struct GameWorld {
     the_number: usize,
@@ -55,7 +51,6 @@ impl Default for GameWorld {
 
         let program = env!("CARGO_BIN_EXE_step_3_1");
 
-        // let the_number: usize = rand::random::<usize>() % (MAX_NUMBER_TO_GUESS + 1);
         let the_number: usize = 42;
 
         let mut child = Command::new(program)
@@ -64,8 +59,6 @@ impl Default for GameWorld {
             .stdout(Stdio::piped())
             .spawn()
             .expect("failed to spawn a process");
-
-        // let pid = child.id();
 
         let stdin = child.stdin.take().expect("cannot take stdin");
         let stdout = BufReader::new(child.stdout.take().expect("cannot take stdout"));
@@ -80,7 +73,6 @@ impl Default for GameWorld {
     }
 }
 
-// Steps are defined with `given`, `when` and `then` attributes.
 #[given("a program is running")]
 fn hb(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     match world.game.try_wait() {
@@ -104,15 +96,6 @@ fn try_win(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> 
     Ok(())
 }
 
-// the structure of output
-
-// #Please input your guess.
-// #...
-// -#You guessed: {}
-// --# You win!
-// --# Too small!
-// --# Too big!
-
 #[then("program ignores a line")]
 fn ignores(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> {
     let line = world.read_stdout_line()?;
@@ -121,16 +104,12 @@ fn ignores(world: &mut GameWorld) -> Result<(), std::borrow::Cow<'static, str>> 
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Please input your guess.\n".into()));
 
-    // let line = world.read_stdout_line()?;
-    // assert_eq!(line, Some("boo\n".into()));
-
     let line = world.read_stdout_line()?;
     assert_eq!(line, Some("Please input your guess.\n".into()));
 
     Ok(())
 }
 
-// is it worth doing at all? such comprehensive test
 #[then("program works as intended")]
 fn works(world: &mut GameWorld) -> Result<(), String> {
     let line = world.read_stdout_line()?;
@@ -153,9 +132,9 @@ fn works(world: &mut GameWorld) -> Result<(), String> {
             } else {
                 let line = world.read_stdout_line()?;
                 assert_eq!(line, Some("You win!\n".into()));
-                break;
+                return Ok(())
             }
-        }
+        } // there's no else branch bc if we enter not a number program doesn't print anything special
     }
 
     Ok(())
@@ -177,21 +156,17 @@ fn we_win(world: &mut GameWorld) -> Result<(), String> {
             if num == world.the_number {
                 let line = world.read_stdout_line()?;
                 assert_eq!(line, Some("You win!\n".into()));
-                break;
+                return Ok(());
             } else {
                 let _ = world.read_stdout_line()?;
             }
-        }
-    }
+        };
+    };
 
-    Ok(())
+    Err("didn't win".into())
 }
 
-// This runs before everything else, so you can setup things here.
-fn main() {
-    // You may choose any executor you like (`tokio`, `async-std`, etc.).
-    // You may even have an `async` main, it doesn't matter. The point is that
-    // Cucumber is composable. :)
 
+fn main() {
     futures::executor::block_on(GameWorld::run("tests/features/"));
 }

@@ -73,6 +73,18 @@ mod tests {
         assert!(matches!(res, GuessResult::Won));
     }
 
+    #[test]
+    fn greater() {
+        let res = game_logic(11, 10);
+        assert!(matches!(res, GuessResult::EnteredGreater));
+    }
+
+    #[test]
+    fn lesser() {
+        let res = game_logic(9, 10);
+        assert!(matches!(res, GuessResult::EnteredLess));
+    }
+
     proptest! {
 
         #[test]
