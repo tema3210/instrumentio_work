@@ -1,19 +1,19 @@
 #![feature(if_let_guard)]
 #![feature(let_chains)]
-use regex::{RegexBuilder};
+use fancy_regex::RegexBuilder;
 
 fn main() {
     println!("Implement me!");
 }
 
 #[derive(Debug, PartialEq)]
-enum Sign {
+pub enum Sign {
     Plus,
     Minus,
 }
 
 #[derive(Debug, PartialEq)]
-enum Precision {
+pub enum Precision {
     Integer(usize),
     Argument(usize),
     Asterisk,
@@ -25,7 +25,7 @@ const NOMATCH: ToGet = (None,None,None);
 
 
 
-fn parse_hand_version(input: &str) -> ToGet {
+pub fn parse_hand_version(input: &str) -> ToGet {
     let mut chars = input.chars().peekable();
 
     loop {
@@ -59,55 +59,59 @@ fn parse_hand_version(input: &str) -> ToGet {
 
 /// we take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
 /// we give back: sign,width,precision
-fn parse(input: &str) -> ToGet {
-    const REGEX3: &'static str = r#"
-        (.?[<^>])?
-        (?P<sign>[+\-])?
-        [#]?
-        [0]?
-        (?P<width>[0-9]+)?
-        (\.(?P<precision>[0-9]+))?
-        \w?
+pub fn parse(input: &str) -> ToGet {
+    const REGEX3: &str = r#"
+        /(.?[<^>])?(?P<sign>[+\-])?[#]?[0]?(?P<width>[0-9]+)?(\.(?P<precision>[0-9]+))?\w?/gm
     "#;
 
     let the_regex = RegexBuilder::new(REGEX3).build().unwrap(); //should have this in lazy static
 
-    if let Some(captures) = the_regex.captures(input) {
-        let sign = captures.name("sign").map(|m| m.as_str()).unwrap_or("");
+    let the_captures = the_regex.captures(input);
 
-        let sign = match sign {
-            "+" => Some(Sign::Plus),
-            "-" => Some(Sign::Plus),
-            "" => None,
-            _ => return (None, None, None),
-        };
+    match the_captures {
+        Ok(Some(captures)) => {
+            let sign = captures.name("sign").map(|m| m.as_str()).unwrap_or("");
 
-        let width = captures.name("width").map(|m| m.as_str()).unwrap_or("");
+            let sign = match sign {
+                "+" => Some(Sign::Plus),
+                "-" => Some(Sign::Plus),
+                "" => None,
+                _ => return (None, None, None),
+            };
 
-        let width = match width {
-            w if let Ok(width) = w.parse::<usize>() => Some(width),
-            "" => None,
-            _ => return (None, None, None),
-        };
+            let width = captures.name("width").map(|m| m.as_str()).unwrap_or("");
 
-        let precision = captures.name("precision").map(|m| m.as_str()).unwrap_or("");
+            let width = match width {
+                w if let Ok(width) = w.parse::<usize>() => Some(width),
+                "" => None,
+                _ => return (None, None, None),
+            };
 
-        let precision = match precision {
-            i if let Ok(uint) = i.parse::<usize>() => Some(Precision::Integer(uint)),
-            a if let Ok(arg) = a[1..].parse()
-                && (a.starts_with('$') || a.starts_with('.')) =>
-            {
-                Some(Precision::Argument(arg))
-            }
-            "*" => Some(Precision::Asterisk),
-            "" => None,
-            _ => return (None, None, None),
-        };
+            let precision = captures.name("precision").map(|m| m.as_str()).unwrap_or("");
 
-        (sign, width, precision)
-    } else {
-        (None, None, None)
+            let precision = match precision {
+                i if let Ok(uint) = i.parse::<usize>() => Some(Precision::Integer(uint)),
+                a if let Ok(arg) = a[1..].parse()
+                    && (a.starts_with('$') || a.starts_with('.')) =>
+                {
+                    Some(Precision::Argument(arg))
+                }
+                "*" => Some(Precision::Asterisk),
+                "" => None,
+                _ => return NOMATCH,
+            };
+
+            (sign, width, precision)
+        },
+        Ok(None) => {
+            eprintln!("No match");
+            NOMATCH
+        },
+        Err(e) => {
+            panic!("{}",e)
+        }
     }
+
 }
 
 #[cfg(test)]
