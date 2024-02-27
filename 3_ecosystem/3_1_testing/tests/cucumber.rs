@@ -1,9 +1,7 @@
 use cucumber::{given, then, when, writer::out::WriteStrExt, World};
 use std::{
-    fmt::format,
     io::{BufRead, BufReader},
     process::{Child, ChildStdin, ChildStdout, Stdio},
-    time::Duration,
 };
 use tracing::{event, Level};
 

@@ -5,10 +5,10 @@ edition = "2021"
 publish = false
 
 [dev-dependencies]
-cucumber = { version = "0.20", features = ["timestamps","tracing"]}
-rand="0.8"
+cucumber = { version = "0.20", features = ["timestamps", "tracing"] }
+rand = "0.8"
 futures = "0.3"
-tracing="0.1"
+tracing = "0.1"
 proptest = "1.4"
 
 [[test]]
