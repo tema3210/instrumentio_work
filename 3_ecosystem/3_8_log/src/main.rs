@@ -39,7 +39,6 @@ impl log::Log for AppLog {
     }
 
     fn log(&self, record: &log::Record) {
-        // panic!();
         if record.level() > log::Level::Warn {
             let msg =
                 make_json_message(record.level(), record, record.args().as_str().unwrap_or(""));
@@ -116,7 +115,7 @@ impl log::Log for AccessLog {
     }
 }
 
-const PATH: &str = "./access.log";
+pub const PATH: &str = "./access.log";
 
 fn main() {}
 
