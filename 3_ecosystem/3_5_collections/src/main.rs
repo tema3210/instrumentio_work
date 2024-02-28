@@ -16,7 +16,6 @@ impl User {
 pub trait UserRepo {
     fn by_id<S: AsRef<str>>(&self, id: S) -> Option<User>;
 
-    //yay
     fn by_ids<'s, S: AsRef<str>>(
         &'s self,
         iter: impl Iterator<Item = S> + 's,
