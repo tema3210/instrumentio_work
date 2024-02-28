@@ -2,7 +2,6 @@ identifier = { ('a'..'z' | 'A'..'Z') ~ ('a'..'z' | 'Z'..'Z' | '0'..'9')* }
 integer  = { ('0'..'9')* }
 argument = { identifier | integer }
 
-
 fill = { (ANY)? }
 align = { "<" | "^" | ">" }
 sign = { "+" | "-" }
@@ -12,5 +11,9 @@ type = { "?" | "x?" | "X?" | identifier | "" }
 count = { parameter | integer }
 parameter = { "$" ~ argument }
 
-format_spec = { ( fill? ~ align )? ~ sign? ~ "#"? ~ "0"? ~ width ~ ( "." ~ precision )? ~ type }
+format_spec = {
+    // ( fill? ~ align )? ~ sign? ~ "#"? ~ "0"? ~ width? ~ ( "." ~ precision )? ~ type 
+    // fill? ~ align? ~ sign? ~ "#"? ~ "0"? ~ width? ~ ( "." ~ precision )? ~ type 
+    ((fill ~ align) | align)? ~ sign? ~ "#"? ~ "0"? ~ width? ~ ( "." ~ precision )? ~ type 
+}
 

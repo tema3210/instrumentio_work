@@ -1,5 +1,7 @@
+#![allow(clippy::never_loop)]
 #![feature(if_let_guard)]
 #![feature(let_chains)]
+use pest::Parser;
 use regex::RegexBuilder;
 use pest_derive::Parser;
 
@@ -24,12 +26,107 @@ type ToGet = (Option<Sign>, Option<usize>, Option<Precision>);
 
 const NOMATCH: ToGet = (None,None,None);
 
+#[derive(Parser)]
+#[grammar = "grammars/fmt.pest"]
+struct FmtParser;
+
+
+#[cfg(test)]
+mod parser_tests {
+
+    use super::{Rule,FmtParser,Parser};
+
+    #[test]
+    fn play() -> Result<(),&'static str> {
+        let data = vec![
+            "", 
+            ">8.*", 
+            ">+8.*", 
+            "-.1$x", 
+            "a^#043.8?"
+        ];
+
+        let job = |input| match FmtParser::parse(Rule::format_spec,input) {
+            Ok(pairs) => {
+                for pair in pairs {
+                    // Process the parsed data as needed
+                    let rule = pair.as_rule();
+                    let text = pair.as_str();
+                    let span = pair.as_span();
+    
+                    println!("Rule: {:?}, Text: {}, Span: {:?}, From: {}", rule, text, span,input);
+
+                    let input = text;
+                    for pair in pair.into_inner() {
+                        let rule = pair.as_rule();
+                        let text = pair.as_str();
+                        let span = pair.as_span();
+        
+                        println!("\tRule: {:?}, Text: {}, Span: {:?}, From: {}", rule, text, span,input);
+                    }
+                };
+                Ok(())
+            },
+            Err(_) => Err("bad things happened"),
+        };
+
+        data.iter().for_each(|s| {
+            job(*s).unwrap();
+        });
+
+        Ok(())
+    }
+}
+
 pub fn parse_hand_version(input: &str) -> ToGet {
+    match FmtParser::parse(Rule::format_spec,input) {
+        Ok(pairs) => {
+            let mut sign = None;
+            let mut width = None;
+            let mut precision = None;
 
-    #[derive(Parser)]
-    #[grammar = "grammars/fmt.pest"]
-    struct Parser;
+            let pair = pairs.take(1).last().unwrap(); //this one doesn't crash because pairs have at least one item inside
 
+            for sub in pair.into_inner() {
+                match sub.as_rule() {
+                    Rule::sign => {
+                        match sub.as_str() {
+                            "+" => sign = Some(Sign::Plus),
+                            "-" => sign = Some(Sign::Minus),
+                            _ => continue
+                        }
+                    },
+                    Rule::width => {
+                        match sub.as_str() {
+                            i if let Ok(i) = i.parse::<usize>() => {
+                                width = Some(i);
+                            },
+                            // we are not supposed to parse parameters here
+                            _ => continue
+                        }
+                    },
+                    Rule::precision => {
+                        match sub.as_str() {
+                            a if let Ok(arg) = a[..a.len()].parse()
+                                && (a.starts_with('$') || a.starts_with('.')) =>
+                            {
+                                println!("the precision: {}", sub.as_str());
+                                precision = Some(Precision::Argument(arg))
+                            },
+                            i if let Ok(uint) = i.parse::<usize>() => precision = Some(Precision::Integer(uint)),
+                            "*" => {
+                                precision = Some(Precision::Asterisk)
+                            },
+                            _ => unreachable!("This")
+                        }
+                    },
+                    _ => continue,
+                }
+            };
+            (sign,width,precision) 
+        },
+        Err(_) => NOMATCH,
+    }
 }
 
 /// we take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
