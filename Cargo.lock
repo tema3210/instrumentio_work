@@ -190,6 +190,10 @@ version = "0.1.0"
 [[package]]
 name = "step_1_5"
 version = "0.1.0"
+dependencies = [
+ "rand",
+ "regex",
+]
 
 [[package]]
 name = "step_1_6"
@@ -206,6 +210,9 @@ version = "0.1.0"
 [[package]]
 name = "step_1_9"
 version = "0.1.0"
+dependencies = [
+ "rand",
+]
 
 [[package]]
 name = "step_2"
@@ -242,6 +249,13 @@ version = "0.1.0"
 [[package]]
 name = "step_3_1"
 version = "0.1.0"
+dependencies = [
+ "cucumber",
+ "futures",
+ "proptest",
+ "rand",
+ "tracing",
+]
 
 [[package]]
 name = "step_3_10"
@@ -254,10 +268,16 @@ version = "0.1.0"
 [[package]]
 name = "step_3_2"
 version = "0.1.0"
+dependencies = [
+ "proc_crate",
+]
 
 [[package]]
 name = "step_3_3"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+]
 
 [[package]]
 name = "step_3_4"
