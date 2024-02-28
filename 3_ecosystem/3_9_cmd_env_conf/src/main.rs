@@ -1,7 +1,6 @@
 use clap::Parser;
 use config::{Config, Environment, File, FileFormat};
 
-/// nice edu example
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Opts {
