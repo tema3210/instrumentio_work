@@ -1,6 +1,7 @@
 #![feature(if_let_guard)]
 #![feature(let_chains)]
-use fancy_regex::RegexBuilder;
+use regex::RegexBuilder;
+use pest_derive::Parser;
 
 fn main() {
     println!("Implement me!");
@@ -23,73 +24,66 @@ type ToGet = (Option<Sign>, Option<usize>, Option<Precision>);
 
 const NOMATCH: ToGet = (None,None,None);
 
-
-
 pub fn parse_hand_version(input: &str) -> ToGet {
-    let mut chars = input.chars().peekable();
 
-    loop {
-        if matches!(chars.peek(),Some(ch) if ch.is_alphabetic()) {
-            let _fill = chars.next();
-        };
+    #[derive(Parser)]
+    #[grammar = "grammars/fmt.pest"]
+    struct Parser;
 
-        if matches!(chars.peek(),Some(ch) if ['<','^','>'].iter().find(|c| *c == ch).is_some()) {
-            let _align = chars.next();
-        }
-
-        let sign = match chars.peek() {
-            Some('+') => {
-                let _ = chars.next();
-                Some(Sign::Plus)
-            },
-            Some('-') => {
-                let _ = chars.next();
-                Some(Sign::Minus)
-            },
-            Some(_) => {
-                None
-            },
-            None => {
-                return NOMATCH;
-            }
-        };
-        
-    }
 }
 
 /// we take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
 /// we give back: sign,width,precision
 pub fn parse(input: &str) -> ToGet {
-    const REGEX3: &str = r#"
-        /(.?[<^>])?(?P<sign>[+\-])?[#]?[0]?(?P<width>[0-9]+)?(\.(?P<precision>[0-9]+))?\w?/gm
+
+    const REGEX_SIGN: &str = r#"
+        (.?[<^>])?(?P<sign>[+\-])?[#]?.*
+    "#;
+    
+    const REGEX_WIDTH: &str = r#"
+        [0]?(?P<width>[0-9]+)?.*
     "#;
 
-    let the_regex = RegexBuilder::new(REGEX3).build().unwrap(); //should have this in lazy static
+    const REGEX_PRECISION: &str = r#"
+        (\.(?P<precision>[0-9]+ | \* )  )?.*
+    "#;
 
-    let the_captures = the_regex.captures(input);
+    let caps = |s: &str| {
+        let the_regex = RegexBuilder::new(s).build().unwrap(); //should have this in lazy static
 
-    match the_captures {
-        Ok(Some(captures)) => {
-            let sign = captures.name("sign").map(|m| m.as_str()).unwrap_or("");
+        let the_captures = the_regex.captures(input);
 
-            let sign = match sign {
+        the_captures
+    };
+
+    let sign = {
+        let c = caps(REGEX_SIGN);
+
+        c.and_then(
+            |c| match c.name("sign").map(|m| m.as_str()).unwrap_or("") {
                 "+" => Some(Sign::Plus),
                 "-" => Some(Sign::Plus),
-                "" => None,
-                _ => return (None, None, None),
-            };
+                _ => None
+            }
+        )
+    };
 
-            let width = captures.name("width").map(|m| m.as_str()).unwrap_or("");
+    let width = {
+        let c = caps(REGEX_WIDTH);
 
-            let width = match width {
+        c.and_then(
+            |c| match c.name("width").map(|m| m.as_str()).unwrap_or("") {
                 w if let Ok(width) = w.parse::<usize>() => Some(width),
-                "" => None,
-                _ => return (None, None, None),
-            };
+                _ => unreachable!(),
+            }
+        )
+    };
 
-            let precision = captures.name("precision").map(|m| m.as_str()).unwrap_or("");
+    let precision = {
+        let c = caps(REGEX_PRECISION);
 
-            let precision = match precision {
+        c.and_then(
+            |c| match c.name("precision").map(|m| m.as_str()).unwrap_or("") {
                 i if let Ok(uint) = i.parse::<usize>() => Some(Precision::Integer(uint)),
                 a if let Ok(arg) = a[1..].parse()
                     && (a.starts_with('$') || a.starts_with('.')) =>
@@ -97,20 +91,12 @@ pub fn parse(input: &str) -> ToGet {
                     Some(Precision::Argument(arg))
                 }
                 "*" => Some(Precision::Asterisk),
-                "" => None,
-                _ => return NOMATCH,
-            };
+                _ => None,
+            }
+        )
+    };
 
-            (sign, width, precision)
-        },
-        Ok(None) => {
-            eprintln!("No match");
-            NOMATCH
-        },
-        Err(e) => {
-            panic!("{}",e)
-        }
-    }
+    (sign,width,precision)
 
 }
 

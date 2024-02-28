@@ -1,0 +1,12 @@
+format_spec = [[fill]align][sign]['#']['0'][width]['.' precision]type
+fill = ANY
+align = '<' | '^' | '>'
+sign = '+' | '-'
+width = count
+precision = count | '*'
+type = '' | '?' | 'x?' | 'X?' | identifier
+count = parameter | integer
+parameter = '$' ~ argument 
+
+identifier = ('a'-'z' | 'A'-'Z') ~ ('a'-'z' | 'A'-'Z' | '0'-'9')
+integer  = ('0'-'9')*
