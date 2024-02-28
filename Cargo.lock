@@ -473,6 +473,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_xorshift"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
+dependencies = [
+ "rand_core",
+]
+
+[[package]]
 name = "regex"
 version = "1.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -481,7 +490,7 @@ dependencies = [
  "aho-corasick",
  "memchr",
  "regex-automata",
- "regex-syntax",
+ "regex-syntax 0.8.2",
 ]
 
 [[package]]
@@ -492,8 +501,14 @@ checksum = "5bb987efffd3c6d0d8f5f89510bb458559eab11e4f869acb20bf845e016259cd"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax",
+ "regex-syntax 0.8.2",
 ]
+
+[[package]]
+name = "regex-syntax"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
 
 [[package]]
 name = "regex-syntax"
@@ -623,6 +638,9 @@ version = "0.1.0"
 [[package]]
 name = "step_1_9"
 version = "0.1.0"
+dependencies = [
+ "rand",
+]
 
 [[package]]
 name = "step_2"
@@ -659,6 +677,13 @@ version = "0.1.0"
 [[package]]
 name = "step_3_1"
 version = "0.1.0"
+dependencies = [
+ "cucumber",
+ "futures",
+ "proptest",
+ "rand",
+ "tracing",
+]
 
 [[package]]
 name = "step_3_10"
@@ -671,10 +696,16 @@ version = "0.1.0"
 [[package]]
 name = "step_3_2"
 version = "0.1.0"
+dependencies = [
+ "proc_crate",
+]
 
 [[package]]
 name = "step_3_3"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+]
 
 [[package]]
 name = "step_3_4"
