@@ -84,7 +84,6 @@ fn main() {
             }
         }
 
-        // Is there any primitive for this? like Go's groups
         for (h, url) in handles {
             match h.await {
                 Ok(Ok(())) => {
