@@ -94,11 +94,11 @@ pub fn parse(input: &str) -> ToGet {
     "#;
     
     const REGEX_WIDTH: &str = r#"
-        [0]?(?P<width>[0-9]+)?.*
+        .*(?P<width>[0-9]+)?.*
     "#;
 
     const REGEX_PRECISION: &str = r#"
-        (\.(?P<precision>[0-9]+ | \* )  )?.*
+        .*(\.(?P<precision>[0-9]+ | \* )  )?.*
     "#;
 
     let caps = |s: &str| {
@@ -106,7 +106,7 @@ pub fn parse(input: &str) -> ToGet {
 
         let the_captures = the_regex.captures(input);
 
-        dbg!(&the_captures,&the_regex,s);
+        dbg!(&the_captures,&the_regex,&input);
 
         the_captures
     };
@@ -141,10 +141,13 @@ pub fn parse(input: &str) -> ToGet {
             |c| match c.name("precision").map(|m| m.as_str()).unwrap_or("") {
                 i if let Ok(uint) = i.parse::<usize>() => Some(Precision::Integer(uint)),
                 a if let Ok(arg) = a[1..].parse()
-                    && (a.starts_with('$') || a.starts_with('.')) =>
+                    && a.starts_with('$') =>
                 {
                     Some(Precision::Argument(arg))
-                }
+                },
+                a if a.starts_with('$') => {
+                    Some(Precision::ArgumentStr(a[1..].into()))
+                },
                 "*" => Some(Precision::Asterisk),
                 _ => None,
             }
