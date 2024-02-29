@@ -19,6 +19,7 @@ pub enum Sign {
 pub enum Precision {
     Integer(usize),
     Argument(usize),
+    ArgumentStr(String),
     Asterisk,
 }
 
@@ -29,54 +30,6 @@ const NOMATCH: ToGet = (None,None,None);
 #[derive(Parser)]
 #[grammar = "grammars/fmt.pest"]
 struct FmtParser;
-
-
-#[cfg(test)]
-mod parser_tests {
-
-    use super::{Rule,FmtParser,Parser};
-
-    #[test]
-    fn play() -> Result<(),&'static str> {
-        let data = vec![
-            "", 
-            ">8.*", 
-            ">+8.*", 
-            "-.1$x", 
-            "a^#043.8?"
-        ];
-
-        let job = |input| match FmtParser::parse(Rule::format_spec,input) {
-            Ok(pairs) => {
-                for pair in pairs {
-                    // Process the parsed data as needed
-                    let rule = pair.as_rule();
-                    let text = pair.as_str();
-                    let span = pair.as_span();
-    
-                    println!("Rule: {:?}, Text: {}, Span: {:?}, From: {}", rule, text, span,input);
-
-                    let input = text;
-                    for pair in pair.into_inner() {
-                        let rule = pair.as_rule();
-                        let text = pair.as_str();
-                        let span = pair.as_span();
-        
-                        println!("\tRule: {:?}, Text: {}, Span: {:?}, From: {}", rule, text, span,input);
-                    }
-                };
-                Ok(())
-            },
-            Err(_) => Err("bad things happened"),
-        };
-
-        data.iter().for_each(|s| {
-            job(*s).unwrap();
-        });
-
-        Ok(())
-    }
-}
 
 pub fn parse_hand_version(input: &str) -> ToGet {
     match FmtParser::parse(Rule::format_spec,input) {
@@ -107,11 +60,14 @@ pub fn parse_hand_version(input: &str) -> ToGet {
                     },
                     Rule::precision => {
                         match sub.as_str() {
-                            a if let Ok(arg) = a[..a.len()].parse()
-                                && (a.starts_with('$') || a.starts_with('.')) =>
+                            a if let Ok(arg) = a[1..].parse()
+                                && a.starts_with('$') =>
                             {
                                 println!("the precision: {}", sub.as_str());
                                 precision = Some(Precision::Argument(arg))
+                            },
+                            a if a.starts_with('$') => {
+                                precision = Some(Precision::ArgumentStr(a[1..].into()))
                             },
                             i if let Ok(uint) = i.parse::<usize>() => precision = Some(Precision::Integer(uint)),
                             "*" => {
@@ -149,6 +105,8 @@ pub fn parse(input: &str) -> ToGet {
         let the_regex = RegexBuilder::new(s).build().unwrap(); //should have this in lazy static
 
         let the_captures = the_regex.captures(input);
+
+        dbg!(&the_captures,&the_regex,s);
 
         the_captures
     };
@@ -235,7 +193,8 @@ mod spec_hand {
             ("", None),
             (">8.*", Some(Precision::Asterisk)),
             (">+8.*", Some(Precision::Asterisk)),
-            ("-.1$x", Some(Precision::Argument(1))),
+            // used to be "-.1$x" but according to grammar that's illegal
+            ("-.$x", Some(Precision::ArgumentStr("x".into()))),
             ("a^#043.8?", Some(Precision::Integer(8))),
         ] {
             let (_, _, precision) = parse_hand_version(input);
@@ -282,7 +241,8 @@ mod spec_regex {
             ("", None),
             (">8.*", Some(Precision::Asterisk)),
             (">+8.*", Some(Precision::Asterisk)),
-            ("-.1$x", Some(Precision::Argument(1))),
+            // used to be "-.1$x" but according to grammar that's illegal
+            ("-.$x", Some(Precision::ArgumentStr("x".into()))),
             ("a^#043.8?", Some(Precision::Integer(8))),
         ] {
             let (_, _, precision) = parse(input);
