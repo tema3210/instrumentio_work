@@ -84,21 +84,29 @@ fn main() {
 }
 
 
-type Compression = usize;
+type Compression = u8;
 
 // into usize percents of quality
 fn process_quality(input: f64) -> Compression {
-    (100.0 - (input % 100.0)).round() as usize
+    let sane  = (input % 100.0).clamp(10.0,90.0).round() as Compression;
+    100 - sane // complementary
+    // sane // direct
 }
 
 fn process_image_bytes<B: AsRef<[u8]>>(bytes: B, compress: Compression) -> Result<Vec<u8>,String> {
-    use zune_jpeg::JpegDecoder;
+    // Decode the image
+    let img = image::load_from_memory(bytes.as_ref())
+        .map_err(|err| format!("Failed to decode image: {}", err))?;
 
-    let mut dec = JpegDecoder::new(bytes.as_ref());
+    // Create an RGBA image to strip metadata
+    let rgba_image: image::RgbaImage = img.to_rgba8();
 
-    let jpeg = dec.decode().map_err(|e| format!("cannot decode JPEG: {}",e))?;
+    // Encode the image with compression
+    let mut compressed_data = std::io::Cursor::new(Vec::new());
+    rgba_image.write_to(&mut compressed_data, image::ImageOutputFormat::Jpeg(compress))
+        .map_err(|err| format!("Failed to compress image: {}", err))?;
 
-    Ok(jpeg)
+    Ok(compressed_data.into_inner())
 }
 
 fn process_file(path: &Path,cfg: &Conf) -> Result<(),String> {
@@ -160,7 +168,6 @@ fn worker(rcv: Receiver<String>,cfg: &Conf) {
         }
     }
 }
-
 
 fn work(conf: &Conf,cli_req: &[String]) {
     let (snd, rcv) = unbounded::<String>();
