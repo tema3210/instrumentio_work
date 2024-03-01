@@ -90,7 +90,6 @@ type Compression = u8;
 fn process_quality(input: f64) -> Compression {
     let sane = (input % 100.0).clamp(10.0, 90.0).round() as Compression;
     100 - sane // complementary
-               // sane // direct
 }
 
 fn process_image_bytes<B: AsRef<[u8]>>(bytes: B, compress: Compression) -> Result<Vec<u8>, String> {
