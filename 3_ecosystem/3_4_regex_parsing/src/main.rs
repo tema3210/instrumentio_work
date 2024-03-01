@@ -85,30 +85,49 @@ pub fn parse_hand_version(input: &str) -> ToGet {
     }
 }
 
+const REGEX_SIGN: &str = r#"(?P<sign>[\+-])?"#;
+    
+const REGEX_WIDTH: &str = r#"(?P<width>[0-9]+)?"#;
+
+const REGEX_PRECISION: &str = r#"(\.(?P<precision>[0-9]+|\*|\$\w))?"#;
+
+fn matcher(regex: &str,name: &str) -> impl Fn(&str) -> Option<&str> {
+    let name = name.to_string();
+    let the_regex = RegexBuilder::new(regex).build().unwrap(); //should have this in lazy static
+
+    move |input| {
+        let captures = the_regex.captures(input);
+
+        let res = captures?.name(&name).map(|m| m.as_str());
+
+        res
+    }
+}
+
+#[cfg(test)]
+mod play {
+    use super::*;
+
+    #[test]
+    fn pg() {
+        let sm = matcher(REGEX_SIGN,"sign");
+        let wm = matcher(REGEX_WIDTH,"width");
+        let pm = matcher(REGEX_PRECISION,"precision");
+
+        dbg!(sm(">+8.*"));
+        dbg!(wm(">+8.*"));
+        dbg!(pm(">+8.*"));
+    }
+}
+
 /// we take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
 /// we give back: sign,width,precision
 pub fn parse(input: &str) -> ToGet {
 
-    const REGEX_SIGN: &str = r#"(?P<sign>[\+-])?"#;
-    
-    const REGEX_WIDTH: &str = r#"(?P<width>[0-9]+)?"#;
-
-    const REGEX_PRECISION: &str = r#"(\.(?P<precision>[0-9]+|\*|\$\w))?"#;
-
-    let caps = |regex: &str,name: &str| {
-        let the_regex = RegexBuilder::new(regex).build().unwrap(); //should have this in lazy static
-
-        let captures = the_regex.captures(input);
-
-        let res = captures?.name(name).map(|m| m.as_str());
-
-        res
-    };
-
     let sign = {
-        let c = caps(REGEX_SIGN,"sign");
+        let c = matcher(REGEX_SIGN,"sign");
 
-        c.and_then(
+        c(input).and_then(
             |c| match c {
                 "+" => Some(Sign::Plus),
                 "-" => Some(Sign::Plus),
@@ -118,9 +137,9 @@ pub fn parse(input: &str) -> ToGet {
     };
 
     let width = {
-        let c = caps(REGEX_WIDTH,"width");
+        let c = matcher(REGEX_WIDTH,"width");
 
-        c.and_then(
+        c(input).and_then(
             |c| match c {
                 w if let Ok(width) = w.parse::<usize>() => Some(width),
                 "" => None,
@@ -130,9 +149,9 @@ pub fn parse(input: &str) -> ToGet {
     };
 
     let precision = {
-        let c = caps(REGEX_PRECISION,"precision");
+        let c = matcher(REGEX_PRECISION,"precision");
 
-        c.and_then(
+        c(input).and_then(
             |c| match c {
                 "*" => Some(Precision::Asterisk),
                 i if let Ok(uint) = i.parse::<usize>() => Some(Precision::Integer(uint)),
@@ -150,17 +169,6 @@ pub fn parse(input: &str) -> ToGet {
     (sign,width,precision)
 
 }
-
-#[cfg(test)]
-mod play {
-    #[test]
-    fn pg() {
-        let answ = super::parse("a^+#043.8?");
-        dbg!(&answ);
-    }
-}
-
-
 
 #[cfg(test)]
 mod spec_hand {
