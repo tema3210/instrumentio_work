@@ -84,21 +84,79 @@ fn main() {
 }
 
 
-fn process_file(path: &Path,cfg: &Conf) -> Result<(),String> {
-    unimplemented!()
+type Compression = usize;
+
+// into usize percents of quality
+fn process_quality(input: f64) -> Compression {
+    (100.0 - (input % 100.0)).round() as usize
 }
 
-fn process_url(path: &url::Url,cfg: &Conf) -> Result<(),String> {
-    unimplemented!()
+fn process_image_bytes<B: AsRef<[u8]>>(bytes: B, compress: Compression) -> Result<Vec<u8>,String> {
+    use zune_jpeg::JpegDecoder;
+
+    let mut dec = JpegDecoder::new(bytes.as_ref());
+
+    let jpeg = dec.decode().map_err(|e| format!("cannot decode JPEG: {}",e))?;
+
+    Ok(jpeg)
+}
+
+fn process_file(path: &Path,cfg: &Conf) -> Result<(),String> {
+    let Some(fname) = path.file_name() else {
+        return Err(format!("supplied path is a dir: {}",path.display()))
+    };
+
+    let image_data = std::fs::read(path).map_err(|_| format!("cannot read file: {}",path.display()))?;
+    
+    let image_data = process_image_bytes(image_data, process_quality(cfg.quality))?;
+
+    save_bytes(image_data,cfg,fname)
+}
+
+fn process_url(url: &url::Url,cfg: &Conf) -> Result<(),String> {
+    // Fetch the image from the URL
+    let response = reqwest::blocking::get(url.as_str())
+        .map_err(|err| format!("Failed to fetch image from URL: {}", err))?;
+
+    // Ensure the request was successful (status code 2xx)
+    if !response.status().is_success() {
+        return Err(format!("Failed to fetch image. Status code: {}", response.status()));
+    }
+
+    let file_name = url.path_segments().and_then(|segments| segments.last()).unwrap_or(url.as_str());
+
+    // Read the image data
+    let image_data = response.bytes()
+        .map_err(|err| format!("Failed to read image data: {}", err))?;
+
+    let image_data = process_image_bytes(image_data, process_quality(cfg.quality))?;
+
+    save_bytes(image_data,cfg,file_name)
+    
+}
+
+fn save_bytes<B: AsRef<[u8]>>(buff: B, cfg: &Conf, fname: impl AsRef<Path>) -> Result<(),String> {
+    // Create the output directory if it doesn't exist
+    std::fs::create_dir_all(&cfg.out_dir)
+        .map_err(|err| format!("Failed to create output directory: {}", err))?;
+
+    // Construct the output file path
+    let file_path = cfg.out_dir.join(fname.as_ref());
+
+    // Save the image data to the file
+    std::fs::write(file_path, buff.as_ref())
+        .map_err(|err| format!("Failed to save image to file: {}", err))?;
+
+    Ok(())
 }
 
 fn worker(rcv: Receiver<String>,cfg: &Conf) {
     while let Ok(s) = rcv.recv() {
         if let Ok(url) = s.parse::<url::Url>() {
-            process_url(&url,cfg);
+            let _ = process_url(&url,cfg);
         }
         if let Ok(path) = s.parse::<PathBuf>() {
-            process_file(&path, cfg);
+            let _ = process_file(&path, cfg);
         }
     }
 }
@@ -107,8 +165,9 @@ fn worker(rcv: Receiver<String>,cfg: &Conf) {
 fn work(conf: &Conf,cli_req: &[String]) {
     let (snd, rcv) = unbounded::<String>();
 
+    // populate cli req to queue
     for i in cli_req.iter() {
-        let _ =snd.send(i.clone());
+        let _ = snd.send(i.clone());
     }
 
     // closure that read lines from stdin
