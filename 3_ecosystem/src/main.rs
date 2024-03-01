@@ -40,7 +40,10 @@ struct Conf {
 }
 
 fn main() {
+    env_logger::init();
     let args = Args::parse();
+
+    log::info!("App launched");
 
     let mut builder = config::Config::builder()
         .add_source(
@@ -78,6 +81,7 @@ fn main() {
         .unwrap();
     }
 
+    log::info!("Config read");
     let conf: Conf = builder.build().unwrap().try_deserialize().unwrap();
 
     work(&conf,&args.images.unwrap_or(vec![]));
@@ -161,21 +165,30 @@ fn save_bytes<B: AsRef<[u8]>>(buff: B, cfg: &Conf, fname: impl AsRef<Path>) -> R
 fn worker(rcv: Receiver<String>,cfg: &Conf) {
     while let Ok(s) = rcv.recv() {
         if let Ok(url) = s.parse::<url::Url>() {
-            let _ = process_url(&url,cfg);
+            let res = process_url(&url,cfg);
+            if let Err(msg) = res {
+                log::error!("Error processing url {}: {}",&url,msg);
+            }
         }
         if let Ok(path) = s.parse::<PathBuf>() {
-            let _ = process_file(&path, cfg);
+            let res = process_file(&path, cfg);
+            if let Err(msg) = res {
+                log::error!("Error processing file {:?}: {}",&path,msg);
+            }
         }
     }
 }
 
 fn work(conf: &Conf,cli_req: &[String]) {
+    
     let (snd, rcv) = unbounded::<String>();
+    log::info!("Work queue created");
 
     // populate cli req to queue
     for i in cli_req.iter() {
         let _ = snd.send(i.clone());
     }
+    log::debug!("CLI args populated");
 
     // closure that read lines from stdin
     let mut consume_stdin = {
@@ -183,7 +196,7 @@ fn work(conf: &Conf,cli_req: &[String]) {
         let mut stdin = std::io::BufReader::new(std::io::stdin());
         move || {
             let mut line = String::new();
-            
+            log::info!("Enter image sources! q! to exit");
             loop {
                 let _ = stdin.read_line(&mut line);
     
@@ -223,12 +236,14 @@ fn work(conf: &Conf,cli_req: &[String]) {
             }
         }
     }
+    log::debug!("file args populated!");
 
     std::thread::scope({
         let rcv = rcv.clone();
         move |s| {
-            for _ in 0..conf.jobs {
+            for i in 0..conf.jobs {
                 let rcv = rcv.clone();
+                log::trace!("worker thread {} spawned!",i);
                 s.spawn(move || worker(rcv.clone(),conf));
             };
             consume_stdin();
