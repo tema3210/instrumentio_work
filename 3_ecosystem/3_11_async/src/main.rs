@@ -8,19 +8,19 @@ use tokio::{
     runtime::Builder,
 };
 
-/// util to download web pages
+/// Util to download web pages
 #[derive(Parser)]
 #[command(version, about, long_about = None, author)]
 struct Args {
     /// The file with urls, newline separated
     file: PathBuf,
 
-    /// maximum thread usage
+    /// Maximum thread usage
     #[arg(long)]
     max_threads: Option<usize>,
 }
 
-/// download and save the site
+/// Download and save the site
 async fn download(link: Url) -> Result<(), String> {
     let fname = link.as_ref().replace('/', "_");
     let fname: PathBuf = format!("./\"{}\".html", fname).parse().unwrap();
