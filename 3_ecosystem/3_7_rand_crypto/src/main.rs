@@ -5,16 +5,17 @@ use base64ct::Encoding;
 use rand::{rngs::OsRng, seq::SliceRandom, Rng};
 
 pub fn generate_password(alphabet: &[char], len: u8) -> String {
-    let mut rng = rand::thread_rng();
-    (0..len).fold(
-        String::with_capacity(len as usize),
-        move |mut s,_| {
-            let idx = rng.gen_range(0..alphabet.len());
-            let ch = alphabet[idx];
-            s.push(ch);
-            s
+
+    struct Wrap<'s>(&'s [char]);
+
+    impl<'s> rand::prelude::Distribution<char> for Wrap<'s> {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> char {
+            let idx = rng.gen_range(0..self.0.len());
+            self.0[idx]
         }
-    )
+    }
+
+    rand::thread_rng().sample_iter(Wrap(alphabet)).take(len.into()).collect()
 }
 
 pub fn select_rand_val<T>(slice: &[T]) -> &T {
