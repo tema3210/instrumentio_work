@@ -71,10 +71,10 @@ fn main() {
         let lines = tokio_stream::wrappers::LinesStream::new(reader.lines());
 
         lines
-            .fold(FuturesUnordered::new(),|futs,l| async {
+            .fold(FuturesUnordered::new(), |futs, l| async {
                 if let Ok(line) = l {
-                    if let Ok(url) =  Url::parse(&line) {
-                        let handle  = tokio::spawn(download(url));
+                    if let Ok(url) = Url::parse(&line) {
+                        let handle = tokio::spawn(download(url));
                         futs.push(handle);
                     };
                 };
