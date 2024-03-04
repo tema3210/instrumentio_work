@@ -15,13 +15,13 @@ struct User {
 
 /// so far to use this over FFI we lack "only" a stable ABI
 struct UserRepositoryDynamic {
-    store: Mutex<Box<dyn Storage<u64,User>>>
+    store: Mutex<Box<dyn Storage<u64, User>>>,
 }
 
 impl UserRepositoryDynamic {
-    fn from_store(s: Box<dyn Storage<u64,User>>) -> Self {
+    fn from_store(s: Box<dyn Storage<u64, User>>) -> Self {
         Self {
-            store: Mutex::from(s)
+            store: Mutex::from(s),
         }
     }
 }
@@ -40,25 +40,33 @@ impl UserRepository for UserRepositoryDynamic {
     }
 
     fn get(&self, key: u64) -> Option<User> {
-        self.store.lock().map(|mut s| s.get(&key).cloned()).unwrap_or(None)
+        self.store
+            .lock()
+            .map(|mut s| s.get(&key).cloned())
+            .unwrap_or(None)
     }
 
     fn remove(&self, key: u64) -> Option<User> {
-        self.store.lock().map(|mut s| s.remove(&key)).unwrap_or(None)
+        self.store
+            .lock()
+            .map(|mut s| s.remove(&key))
+            .unwrap_or(None)
     }
 }
 
 struct HashMapStorage {
-    map: HashMap<u64,User>
+    map: HashMap<u64, User>,
 }
 
 impl HashMapStorage {
     fn empty() -> Self {
-        Self { map: HashMap::new() }
+        Self {
+            map: HashMap::new(),
+        }
     }
 }
 
-impl Storage<u64,User> for HashMapStorage {
+impl Storage<u64, User> for HashMapStorage {
     fn set(&mut self, key: u64, val: User) {
         self.map.insert(key, val);
     }
@@ -79,7 +87,6 @@ struct CreateUser;
 
 impl Command for CreateUser {}
 
-
 /// the command handler API
 trait CommandHandler<C: Command> {
     type Context: ?Sized;
@@ -91,7 +98,7 @@ trait CommandHandler<C: Command> {
 impl CommandHandler<CreateUser> for User {
     type Context = dyn UserRepository;
     type Result = Result<(), &'static str>;
-    
+
     fn handle_command(&self, _: &CreateUser, user_repo: &Self::Context) -> Self::Result {
         user_repo.set(self.id, self.clone());
         Ok(())
@@ -99,7 +106,6 @@ impl CommandHandler<CreateUser> for User {
 }
 
 fn main() {
-
     let store = HashMapStorage::empty();
 
     /// here dynamic cast happens
@@ -108,8 +114,7 @@ fn main() {
     let user = User {
         id: 5,
         email: "nooooo, we can fix this!".into(),
-        activated: true // yuumi eto chity (lol champ)
+        activated: true, // yuumi eto chity (lol champ)
     };
     user.handle_command(&CreateUser, &ctx).expect("died");
 }
- 

@@ -46,7 +46,6 @@ impl Error {
 #[derive(Debug, Default)]
 pub struct Server(Option<SocketAddr>);
 
-
 impl Server {
     pub fn bind<A: Into<IpAddr>>(&mut self, ip: A, port: u16) {
         self.0 = Some(SocketAddr::new(ip.into(), port))
@@ -66,7 +65,7 @@ mod server_spec {
         fn sets_provided_address_to_server() {
             let mut server = Server::default();
 
-            server.bind([127,0,0,1], 8080);
+            server.bind([127, 0, 0, 1], 8080);
             assert_eq!(format!("{}", server.0.unwrap()), "127.0.0.1:8080");
 
             server.bind("::1".parse::<Ipv6Addr>().unwrap(), 9911);
