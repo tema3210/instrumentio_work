@@ -1,6 +1,7 @@
 use clap::Parser;
+use futures::{stream::FuturesUnordered, StreamExt as _};
 use reqwest::Url;
-use std::{fmt::format, path::PathBuf};
+use std::path::PathBuf;
 use tokio::{
     fs::File,
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -38,7 +39,7 @@ async fn download(link: Url) -> Result<(), String> {
         .map_err(|e| format!("cannot create file {e:?}"))?;
 
     match file.write_all(&bytes).await {
-        Ok(_) => return Ok(()),
+        Ok(_) => Ok(()),
         Err(_) => {
             drop(file);
             tokio::fs::remove_file(&fname).await.unwrap();
@@ -65,37 +66,22 @@ fn main() {
     runtime.block_on(async {
         let file = File::open(args.file).await.unwrap();
 
-        let mut reader = BufReader::new(file);
+        let reader = BufReader::new(file);
 
-        let mut line = String::new();
+        let lines = tokio_stream::wrappers::LinesStream::new(reader.lines());
 
-        let mut handles = vec![];
-        while let Ok(l) = AsyncBufReadExt::read_line(&mut reader, &mut line).await {
-            if l == 0 {
-                break;
-            }
-
-            let line_inner = line.clone();
-            line.clear();
-
-            if let Ok(url) = Url::parse(&line_inner) {
-                let h = tokio::spawn(download(url.clone()));
-                handles.push((h, url));
-            }
-        }
-
-        for (h, url) in handles {
-            match h.await {
-                Ok(Ok(())) => {
-                    println!("Loaded {url}");
-                }
-                Ok(Err(e)) => {
-                    println!("Cannot load {url}: {e}")
-                }
-                Err(_) => {
-                    println!("Internal error")
-                }
-            }
-        }
+        lines
+            .fold(FuturesUnordered::new(),|futs,l| async {
+                if let Ok(line) = l {
+                    if let Ok(url) =  Url::parse(&line) {
+                        let handle  = tokio::spawn(download(url));
+                        futs.push(handle);
+                    };
+                };
+                futs
+            })
+            .await
+            .collect::<Vec<_>>()
+            .await
     });
 }
