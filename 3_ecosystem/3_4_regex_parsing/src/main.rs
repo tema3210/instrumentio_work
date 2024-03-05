@@ -85,86 +85,71 @@ pub fn parse_hand_version(input: &str) -> ToGet {
     }
 }
 
-const REGEX_SIGN: &str = r#"(?P<sign>[\+-])?"#;
+const REGEX_SIGN: &str = r#"([\+-])"#;
     
-const REGEX_WIDTH: &str = r#"(?P<width>[0-9]+)?"#;
+const REGEX_WIDTH: &str = r#"([0-9]+)"#;
 
-const REGEX_PRECISION: &str = r#"(\.(?P<precision>[0-9]+|\*|\$\w))?"#;
+const REGEX_PRECISION: &str = r#"(\.([0-9]+|\*|\$\w))"#;
 
-fn matcher(regex: &str,name: &str) -> impl Fn(&str) -> Option<&str> {
-    let name = name.to_string();
+fn matcher(regex: &str) -> impl Fn(&str,usize) -> Option<(&str,usize)> {
     let the_regex = RegexBuilder::new(regex).build().unwrap(); //should have this in lazy static
 
-    move |input| {
-        let captures = the_regex.captures(input);
+    move |input,key: usize| {
+        let captures = the_regex.captures(input)?;
 
-        let res = captures?.name(&name).map(|m| m.as_str());
+        let res = captures.get(key).map(|m| m.as_str());
 
-        res
+        Some((res?,captures.len()))
     }
 }
 
-#[cfg(test)]
-mod play {
-    use super::*;
-
-    #[test]
-    fn pg() {
-        let sm = matcher(REGEX_SIGN,"sign");
-        let wm = matcher(REGEX_WIDTH,"width");
-        let pm = matcher(REGEX_PRECISION,"precision");
-
-        dbg!(sm(">+8.*"));
-        dbg!(wm(">+8.*"));
-        dbg!(pm(">+8.*"));
-    }
-}
-
-/// we take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
-/// we give back: sign,width,precision
+/// We take in: format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
+/// We give back: sign,width,precision
 pub fn parse(input: &str) -> ToGet {
 
     let sign = {
-        let c = matcher(REGEX_SIGN,"sign");
+        let c = matcher(REGEX_SIGN);
 
-        c(input).and_then(
-            |c| match c {
+        c(input,1).and_then(
+            |(c,_)| match c {
                 "+" => Some(Sign::Plus),
-                "-" => Some(Sign::Plus),
+                "-" => Some(Sign::Minus),
                 _ => None
             }
         )
     };
 
-    let width = {
-        let c = matcher(REGEX_WIDTH,"width");
+    let width_matcher = matcher(REGEX_WIDTH);
 
-        c(input).and_then(
-            |c| match c {
-                w if let Ok(width) = w.parse::<usize>() => Some(width),
-                "" => None,
-                _ => unreachable!(),
-            }
-        )
-    };
+    let precision_matcher = matcher(REGEX_PRECISION);
 
-    let precision = {
-        let c = matcher(REGEX_PRECISION,"precision");
 
-        c(input).and_then(
-            |c| match c {
-                "*" => Some(Precision::Asterisk),
-                i if let Ok(uint) = i.parse::<usize>() => Some(Precision::Integer(uint)),
-                a if a.starts_with('$') && let Ok(arg) = a[1..].parse() => {
-                    Some(Precision::Argument(arg))
-                },
-                a if a.starts_with('$') => {
-                    Some(Precision::ArgumentStr(a[1..].into()))
-                },
-                _ => None,
-            }
-        )
-    };
+    let width = width_matcher(input,1).and_then(
+        |(c,_)| match c {
+            w if let Ok(width) = w.parse::<usize>() => {
+                Some(width)
+            },
+            "" => None,
+            _ => unreachable!(),
+        }
+    );
+
+    let precision = precision_matcher(input,2).and_then(
+        |(c,_)| match c {
+            "*" => Some(Precision::Asterisk),
+            i if let Ok(uint) = i.parse::<usize>() => {
+                // what if we have two integers...
+                Some(Precision::Integer(uint))
+            },
+            a if a.starts_with('$') && let Ok(arg) = a[1..].parse() => {
+                Some(Precision::Argument(arg))
+            },
+            a if a.starts_with('$') => {
+                Some(Precision::ArgumentStr(a[1..].into()))
+            },
+            _ => None,
+        }
+    );
 
     (sign,width,precision)
 
@@ -228,7 +213,8 @@ mod spec_regex {
             ("", None),
             (">8.*", None),
             (">+8.*", Some(Sign::Plus)),
-            ("-.1$x", Some(Sign::Minus)),
+            // used to be "-.1$x" but according to grammar that's illegal
+            ("-.$x", Some(Sign::Minus)),
             ("a^#043.8?", None),
         ] {
             let (sign, ..) = parse(input);
@@ -242,7 +228,8 @@ mod spec_regex {
             ("", None),
             (">8.*", Some(8)),
             (">+8.*", Some(8)),
-            ("-.1$x", None),
+            // used to be "-.1$x" but according to grammar that's illegal
+            ("-.$x", None),
             ("a^#043.8?", Some(43)),
         ] {
             let (_, width, _) = parse(input);
