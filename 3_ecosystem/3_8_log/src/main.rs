@@ -56,23 +56,31 @@ impl log::Log for AppLog {
     }
 }
 
-pub struct AccessLog(OnceCell<(Mutex<BufWriter<File>>, String)>);
+type AccessLogInner = (Mutex<BufWriter<File>>, String);
+pub struct AccessLog(OnceCell<AccessLogInner>);
 
 impl AccessLog {
-    pub fn init<P: AsRef<Path>>(to: P) {
+
+    pub fn make_inner<P: AsRef<Path>>(to: P) -> AccessLogInner {
         let file = File::create(to.as_ref()).unwrap();
         let fname = to.as_ref().file_name().unwrap();
+        (
+            Mutex::new(BufWriter::new(file)),
+            fname.to_str().expect("cannot name a file").to_owned(),
+        )
+    }
 
+    pub fn make_instance(inner: AccessLogInner) -> &'static Self {
         static INSTANCE: AccessLog = AccessLog(OnceCell::new());
 
-        INSTANCE.0.get_or_init(|| {
-            (
-                Mutex::new(BufWriter::new(file)),
-                fname.to_str().expect("cannot name a file").to_owned(),
-            )
-        });
+        INSTANCE.0.get_or_init(|| inner);
 
-        log::set_logger(&INSTANCE)
+        &INSTANCE
+    }
+
+
+    pub fn init<P: AsRef<Path>>(to: P) {
+        log::set_logger(Self::make_instance(Self::make_inner(to)))
             .map(|()| log::set_max_level(log::LevelFilter::Info))
             .expect("cannot set logger");
     }
@@ -115,6 +123,62 @@ impl log::Log for AccessLog {
     }
 }
 
+pub struct Combinator {
+    prev: Option<Box<Self>>,
+    current: &'static dyn log::Log
+}
+
+impl Combinator {
+
+    pub fn init(self) {
+        let b = Box::new(self);
+        log::set_boxed_logger(b)
+        .map(|()| log::set_max_level(log::LevelFilter::Info))
+        .expect("cannot set logger");
+    }
+
+    pub fn new(c: &'static dyn log::Log) -> Self {
+        Self {
+            prev: None,
+            current: c
+        }
+    }
+
+    ///there used to be also unchain method to pop the logger from this list, but log crate offers no support for swapping loggers, and in fact prevents us from doing so
+    pub fn chain(self,next: &'static dyn log::Log) -> Self {
+        Self {
+            prev: Some(Box::new(self)),
+            current: next
+        }
+    }
+
+}
+
+impl log::Log for Combinator {
+    fn enabled(&self, _: &log::Metadata) -> bool {
+        true
+    }
+
+    fn log(&self, record: &log::Record) {
+        //delegate to current
+        self.current.log(record);
+
+        // and propagate to previous
+        if let Some(prev) = &self.prev {
+            prev.log(record)
+        }
+    }
+
+    fn flush(&self) {
+        self.current.flush();
+
+        // and propagate to previous
+        if let Some(prev) = &self.prev {
+            prev.flush()
+        }
+    }
+}
+
 pub const PATH: &str = "./access.log";
 
 fn main() {}
@@ -122,7 +186,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
 
-    use crate::{AccessLog, AppLog, PATH};
+    use crate::{AccessLog, AppLog, Combinator, PATH};
 
     #[test]
     fn test_first_logger() {
@@ -142,6 +206,24 @@ mod tests {
     #[test]
     fn test_second_logger() {
         AccessLog::init(PATH);
+
+        log::trace!("trace");
+
+        log::debug!("debug");
+
+        log::info!("info");
+
+        log::warn!("warn");
+
+        log::error!("err");
+    }
+
+    #[test]
+    fn test_both_loggers() {
+        Combinator::new(
+            AccessLog::make_instance(AccessLog::make_inner(PATH))
+        ).chain(&AppLog)
+        .init();
 
         log::trace!("trace");
 
