@@ -8,3 +8,4 @@ publish = false
 clap = { version = "4.5.1", features = ["derive"] }
 config="0.14.0"
 serde="*"
+smart-default = "0.7.1"

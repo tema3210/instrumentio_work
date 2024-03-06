@@ -1446,6 +1446,7 @@ dependencies = [
  "clap",
  "config",
  "serde",
+ "smart-default",
 ]
 
 [[package]]
