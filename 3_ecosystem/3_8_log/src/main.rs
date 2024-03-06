@@ -1,9 +1,8 @@
 use std::{
-    fs::File,
-    io::{BufWriter, Write},
-    path::Path,
-    sync::Mutex,
+    fs::File, io::{BufWriter, Write}, ops::Range, path::Path, sync::Mutex
 };
+
+use log::Level;
 
 use once_cell::sync::OnceCell;
 
@@ -19,15 +18,15 @@ impl AppLog {
     }
 }
 
-fn make_json_message<M: AsRef<str>>(
+fn make_json_message(
     lvl: log::Level,
-    rec: &log::Record,
-    msg: M,
+    msg: impl AsRef<str>,
+    target: impl AsRef<str>
 ) -> serde_json::Value {
     let value = serde_json::json!({
         "lvl": lvl.as_str(),
         "time": format!("{:?}",std::time::Instant::now()),
-        "file": rec.file(),
+        "file": target.as_ref(),
         "msg": msg.as_ref()
     });
     value
@@ -41,11 +40,11 @@ impl log::Log for AppLog {
     fn log(&self, record: &log::Record) {
         if record.level() > log::Level::Warn {
             let msg =
-                make_json_message(record.level(), record, record.args().as_str().unwrap_or(""));
+                make_json_message(record.level(), record.args().as_str().unwrap_or(""),"app.log");
             let _ = writeln!(std::io::stderr(), "{}", msg);
         } else {
             let msg =
-                make_json_message(record.level(), record, record.args().as_str().unwrap_or(""));
+                make_json_message(record.level(), record.args().as_str().unwrap_or(""),"app.log");
             let _ = writeln!(std::io::stdout(), "{}", msg);
         }
     }
@@ -108,7 +107,7 @@ impl log::Log for AccessLog {
         let Some(s) = record.args().as_str() else {
             panic!("cannot get the data")
         };
-        let msg = make_json_message(record.level(), record, s);
+        let msg = make_json_message(record.level(), s, "access.log");
         self.write_message(msg)
     }
 
@@ -123,32 +122,38 @@ impl log::Log for AccessLog {
     }
 }
 
+
 pub struct Combinator {
     prev: Option<Box<Self>>,
-    current: &'static dyn log::Log
+    current: &'static dyn log::Log,
+    range: Range<Level>
 }
 
 impl Combinator {
 
-    pub fn init(self) {
+    pub fn init(self, ll: log::LevelFilter) {
         let b = Box::new(self);
         log::set_boxed_logger(b)
-        .map(|()| log::set_max_level(log::LevelFilter::Info))
+        .map(|()| log::set_max_level(ll))
         .expect("cannot set logger");
     }
 
-    pub fn new(c: &'static dyn log::Log) -> Self {
+    pub fn wrap(c: &'static dyn log::Log, range: Range<Level>) -> Self {
+        assert!(!range.is_empty());
         Self {
             prev: None,
-            current: c
+            current: c,
+            range
         }
     }
 
     ///there used to be also unchain method to pop the logger from this list, but log crate offers no support for swapping loggers, and in fact prevents us from doing so
-    pub fn chain(self,next: &'static dyn log::Log) -> Self {
+    pub fn chain(self,next: &'static dyn log::Log, range: Range<Level>) -> Self {
+        assert!(!range.is_empty());
         Self {
             prev: Some(Box::new(self)),
-            current: next
+            current: next,
+            range
         }
     }
 
@@ -160,8 +165,13 @@ impl log::Log for Combinator {
     }
 
     fn log(&self, record: &log::Record) {
-        //delegate to current
-        self.current.log(record);
+
+        let should_log = self.range.contains(&record.level());
+
+        if should_log {
+            //delegate to current in case we need to
+            self.current.log(record)
+        }
 
         // and propagate to previous
         if let Some(prev) = &self.prev {
@@ -185,8 +195,8 @@ fn main() {}
 
 #[cfg(test)]
 mod tests {
-
     use crate::{AccessLog, AppLog, Combinator, PATH};
+    use log::Level;
 
     #[test]
     fn test_first_logger() {
@@ -220,10 +230,14 @@ mod tests {
 
     #[test]
     fn test_both_loggers() {
-        Combinator::new(
-            AccessLog::make_instance(AccessLog::make_inner(PATH))
-        ).chain(&AppLog)
-        .init();
+        Combinator::wrap(
+            AccessLog::make_instance(AccessLog::make_inner(PATH)),
+            Level::Error..Level::Warn
+        ).chain(
+            &AppLog,
+            Level::Warn..Level::Trace
+        )
+        .init(log::LevelFilter::max());
 
         log::trace!("trace");
 

@@ -1,3 +1,1 @@
-{"file":"3_ecosystem/3_8_log/src/main.rs","lvl":"INFO","msg":"info","time":"Instant { tv_sec: 60790, tv_nsec: 516428828 }"}
-{"file":"3_ecosystem/3_8_log/src/main.rs","lvl":"WARN","msg":"warn","time":"Instant { tv_sec: 60796, tv_nsec: 104025325 }"}
-{"file":"3_ecosystem/3_8_log/src/main.rs","lvl":"ERROR","msg":"err","time":"Instant { tv_sec: 60802, tv_nsec: 583557530 }"}
+{"file":"access.log","lvl":"ERROR","msg":"err","time":"Instant { tv_sec: 24318, tv_nsec: 636548334 }"}
