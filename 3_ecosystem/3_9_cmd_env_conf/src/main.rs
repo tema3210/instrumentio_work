@@ -101,14 +101,17 @@ mod conf {
 fn main() {
     let args = Opts::parse();
 
+    let c_path = args.conf.unwrap_or(
+        // prefer from cmd
+        std::env::var("CONF_FILE") // or consume from env
+            .unwrap_or("config.toml".into()), // or use default, in order
+    );
+
     let builder = Config::builder()
         .add_source(
             Config::try_from(&conf::Conf::default()).expect("cannot process default values"),
         )
-        .add_source(File::new(
-            args.conf.as_deref().unwrap_or("config.toml"),
-            FileFormat::Toml,
-        ))
+        .add_source(File::new(&c_path, FileFormat::Toml))
         .add_source(Environment::with_convert_case(config::Case::UpperSnake).prefix("CONF_"));
 
     let conf: conf::Conf = builder.build().unwrap().try_deserialize().unwrap();
