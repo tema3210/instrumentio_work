@@ -1,1 +1,2 @@
-{"file":"access.log","lvl":"ERROR","msg":"err","time":"Instant { tv_sec: 24318, tv_nsec: 636548334 }"}
+{"file":"access.log","lvl":"WARN","msg":"warn","time":"Instant { tv_sec: 24763, tv_nsec: 14041057 }"}
+{"file":"access.log","lvl":"ERROR","msg":"err","time":"Instant { tv_sec: 24763, tv_nsec: 14168057 }"}

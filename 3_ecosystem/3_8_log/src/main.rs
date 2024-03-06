@@ -138,6 +138,7 @@ impl Combinator {
         .expect("cannot set logger");
     }
 
+    /// range is inclusive
     pub fn wrap(c: &'static dyn log::Log, range: Range<Level>) -> Self {
         assert!(!range.is_empty());
         Self {
@@ -147,7 +148,8 @@ impl Combinator {
         }
     }
 
-    ///there used to be also unchain method to pop the logger from this list, but log crate offers no support for swapping loggers, and in fact prevents us from doing so
+    /// there used to be also unchain method to pop the logger from this list, but log crate offers no support for swapping loggers, and in fact prevents us from doing so
+    /// range is inclusive
     pub fn chain(self,next: &'static dyn log::Log, range: Range<Level>) -> Self {
         assert!(!range.is_empty());
         Self {
@@ -166,7 +168,12 @@ impl log::Log for Combinator {
 
     fn log(&self, record: &log::Record) {
 
-        let should_log = self.range.contains(&record.level());
+        let lvl = record.level();
+
+        // let should_log = self.range.contains(&lvl);
+
+        
+        let should_log = self.range.start <= lvl && self.range.end >= lvl;
 
         if should_log {
             //delegate to current in case we need to
@@ -235,7 +242,7 @@ mod tests {
             Level::Error..Level::Warn
         ).chain(
             &AppLog,
-            Level::Warn..Level::Trace
+            Level::Info..Level::Trace
         )
         .init(log::LevelFilter::max());
 
