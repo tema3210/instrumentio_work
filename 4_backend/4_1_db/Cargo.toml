@@ -8,6 +8,7 @@ publish = false
 
 tokio = { version = "1.36.0", features = [ "full" ] }
 dotenv = "0.15.0"
-diesel = { version = "2.1.4", features = [ "postgres" ] }
+diesel = { version = "2.1.4", features = [ "postgres", "uuid"] }
 diesel-async = { version = "0.4.1", features = [ "postgres" ] }
 clap = { version = "4.5.1", features = [ "derive" ] }
+uuid = { version = "1.7.0", features = ["v4"] }

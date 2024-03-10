@@ -4,8 +4,7 @@ diesel::table! {
     roles (slug) {
         slug -> Varchar,
         description -> Nullable<Varchar>,
-        #[max_length = 1]
-        perms -> Bpchar,
+        perms -> SmallInt,
     }
 }
 
