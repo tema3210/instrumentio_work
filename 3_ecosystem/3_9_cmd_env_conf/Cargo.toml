@@ -6,6 +6,6 @@ publish = false
 
 [dependencies]
 clap = { version = "4.5.1", features = ["derive"] }
-config="0.14.0"
-serde="*"
+config = "0.14.0"
+serde = "1.0.197"
 smart-default = "0.7.1"
