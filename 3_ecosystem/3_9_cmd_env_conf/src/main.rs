@@ -107,14 +107,12 @@ fn main() {
             .unwrap_or("config.toml".into()), // or use default, in order
     );
 
-    let mut builder = Config::builder()
-        .add_source(
-            Config::try_from(&conf::Conf::default()).expect("cannot process default values"),
-        );
-    
+    let mut builder = Config::builder().add_source(
+        Config::try_from(&conf::Conf::default()).expect("cannot process default values"),
+    );
+
     if std::fs::metadata(&c_path).is_ok() {
-        builder = builder
-            .add_source(File::new(&c_path, FileFormat::Toml));
+        builder = builder.add_source(File::new(&c_path, FileFormat::Toml));
     }
 
     builder = builder
